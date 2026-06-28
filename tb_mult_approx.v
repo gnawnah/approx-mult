@@ -8,8 +8,9 @@ module tb_mult_approx;
     integer total_abs_error = 0;
     integer max_error  = 0;
     integer this_error;
+    parameter TRUNC_BITS = 0;
 
-    mult_approx dut (.a(a), .b(b), .product(p));
+    mult_approx #(TRUNC_BITS) dut (.a(a), .b(b), .product(p));
 
     initial begin
         $dumpfile("mult_approx.vcd");
