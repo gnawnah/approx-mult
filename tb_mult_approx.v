@@ -20,14 +20,15 @@ module tb_mult_approx;
                 a = i;
                 b = j;
                 #1;
-                expected = i * j;
-                this_error = (expected > p) ? expected - p : p - expected;
-                total_abs_error = total_abs_error + this_error;
+                expected = i * j; // this is the correct value, a * b
+                this_error = (expected > p) ? expected - p : p - expected; //find absolute error of the current value
+                total_abs_error = total_abs_error + this_error; // sum
                 if(this_error>max_error)
                     max_error = this_error;
             end
         end
 
+        // the max error should be (a*b - a_t * b_t)
         $display("T test: total abs error = %0d, max error = %0d", total_abs_error, max_error);
 
         $finish;
