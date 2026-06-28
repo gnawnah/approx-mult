@@ -7,10 +7,10 @@ An 8x8 multiplier that truncates its operands to trade accuracy for hardware, wr
 Zeroing the low bits of both operands before multiplying makes the hardware
 smaller but the result slightly wrong:
 
-\`\`\`verilog
+```verilog
 assign a_trunc = (a >> TRUNC_BITS) << TRUNC_BITS;
 assign product = a_trunc * b_trunc;
-\`\`\`
+```
 
 Thinking of `a × b` as the area of a rectangle, truncation drops thin strips off the edges. Truncating one operand drops one strip; truncating both drops two strips plus a corner, which is why the worst-case error roughly doubles:
 
@@ -36,10 +36,10 @@ I swept `TRUNC_BITS` from 0 to 8 and measured the error, then dropped the multip
 
 ## Run it
 
-\`\`\`bash
+```bash
 python3 sweep.py
 python3 plot.py
-\`\`\`
+```
 
 ## Next
 
