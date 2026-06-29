@@ -1,2 +1,6 @@
 sim
 *.vcd
+sim_approx
+sim_mac
+venv/
+__pycache__/
