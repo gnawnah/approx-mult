@@ -1,0 +1,5 @@
+config,trunc_bits,luts,ffs,dynamic_power_W
+mac,0,86,32,0.032
+mac,2,51,28,0.019
+mac,4,21,24,0.015
+mac,6,4,20,0.012
