@@ -26,14 +26,14 @@ def quantize_symmetric(x, bits=8):
 def quantize_unsigned(x, scale):
     return np.round(x / scale).clip(0, 255).astype(np.uint8)
 
-
+# this is applied to the activations (pixel values)
 def trunc_unsigned(x, trunc_bits):
     if trunc_bits == 0:
         return x.astype(np.int32)
     x = x.astype(np.int32)
     return (x >> trunc_bits) << trunc_bits
 
-
+# this is applied to the weights
 def trunc_signed(x, trunc_bits):
     if trunc_bits == 0:
         return x.astype(np.int32)

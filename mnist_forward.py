@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
+# this script does the network work and establishes the base line ~ 97.73%
 
 def load_mnist(path):
     data = np.load(path)
