@@ -1,37 +1,30 @@
-`timescale 1ns/1ps
-// instead of finding mismatches, we gonna find how wrong the approx mult is
 module tb_mult_approx;
-    reg[7:0] a, b;
-    wire [15:0] p;
-    reg [15:0] expected;
+    parameter WIDTH = 8;
+    parameter TRUNC_BITS = 2;
+
+    reg  [WIDTH-1:0]   a, b;
+    wire [2*WIDTH-1:0] p;
+    reg  [2*WIDTH-1:0] expected;
     integer i, j;
     integer total_abs_error = 0;
-    integer max_error  = 0;
+    integer max_error = 0;
     integer this_error;
-    parameter TRUNC_BITS = 0;
 
-    mult_approx #(TRUNC_BITS) dut (.a(a), .b(b), .product(p));
+    mult_approx #(.WIDTH(WIDTH), .TRUNC_BITS(TRUNC_BITS)) dut (.a(a), .b(b), .product(p));
 
     initial begin
-        $dumpfile("mult_approx.vcd");
-        $dumpvars(0, tb_mult_approx);
-
-        for(i=0; i<256; i=i+1) begin
-            for(j=0; j<256; j=j+1) begin
-                a = i;
-                b = j;
+        for (i = 0; i < (1<<WIDTH); i = i + 1) begin 
+            for (j = 0; j < (1<<WIDTH); j = j + 1) begin
+                a = i; b = j;
                 #1;
-                expected = i * j; // this is the correct value, a * b
-                this_error = (expected > p) ? expected - p : p - expected; //find absolute error of the current value
-                total_abs_error = total_abs_error + this_error; // sum
-                if(this_error>max_error)
-                    max_error = this_error;
+                expected = i * j;
+                this_error = (expected > p) ? expected - p : p - expected;
+                total_abs_error = total_abs_error + this_error;
+                if (this_error > max_error) max_error = this_error;
             end
         end
-
-        // the max error should be (a*b - a_t * b_t)
-        $display("T test: total abs error = %0d, max error = %0d", total_abs_error, max_error);
-
+        $display("WIDTH=%0d TRUNC=%0d: total abs error = %0d, max error = %0d",
+                 WIDTH, TRUNC_BITS, total_abs_error, max_error);
         $finish;
     end
 endmodule
