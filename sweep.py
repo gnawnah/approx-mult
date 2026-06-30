@@ -1,81 +1,84 @@
 #!/usr/bin/env python3
-import subprocess # this allows python to launch external programs
-import re # pull the two numbers out of the testbench's output line
-import csv # writes csv file
+import subprocess
+import re
+import csv
 
-NUM_CASES = 256 * 256 # number of input pairs
-
-# make filenames constant for reusability
-MODULE_FILE    = "mult_approx.v" 
+MODULE_FILE    = "mult_approx.v"
 TESTBENCH_FILE = "tb_mult_approx.v"
 COMPILED_SIM   = "sim_approx"
-CSV_OUTPUT     = "sweep_results.csv"
+CSV_OUTPUT     = "grid_results.csv"
 
-results = [] # empty list that will grow after every T
+WIDTHS = [4, 6, 8]
 
-for T in range(9): # gives 0 to 8
-# building a list, allows python to run program directly without involving shell
-    compile_cmd = [
-        "iverilog",
-        "-g2012",
-        f"-Ptb_mult_approx.TRUNC_BITS={T}", # f string, T gets replaced by the current loop value, P overrides the parameter
-        "-o", COMPILED_SIM,
-        TESTBENCH_FILE,
-        MODULE_FILE,
-    ]
-    subprocess.run(compile_cmd, check=True) # launch iverilog, wait for it to finish
+results = []
 
-    run_result = subprocess.run( # this runs the simulation
-        ["vvp", COMPILED_SIM],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    output = run_result.stdout # grab the captured text
+for W in WIDTHS:
+    for T in range(W):          # 0 .. W-1, so T is always < W
+        compile_cmd = [
+            "iverilog",
+            "-g2012",
+            f"-Ptb_mult_approx.WIDTH={W}",
+            f"-Ptb_mult_approx.TRUNC_BITS={T}",
+            "-o", COMPILED_SIM,
+            TESTBENCH_FILE,
+            MODULE_FILE,
+        ]
+        subprocess.run(compile_cmd, check=True)
 
-    # captures
-    match = re.search(r"total abs error = (\d+), max error = (\d+)", output)
+        run_result = subprocess.run(
+            ["vvp", COMPILED_SIM],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        output = run_result.stdout
 
-    if match is None:
-        print(f"T={T}: could not parse output:\n{output}")
-        continue
+        match = re.search(r"total abs error = (\d+), max error = (\d+)", output)
 
-    total_abs_error = int(match.group(1))
-    max_error       = int(match.group(2))
-    mean_abs_error  = total_abs_error / NUM_CASES
+        if match is None:
+            print(f"W={W} T={T}: could not parse output:\n{output}")
+            continue
 
-    results.append({
-        "T":               T,
-        "total_abs_error": total_abs_error,
-        "mean_abs_error":  mean_abs_error,
-        "max_error":       max_error,
-    })
+        total_abs_error = int(match.group(1))
+        max_error       = int(match.group(2))
+        num_cases       = (1 << W) ** 2          # (2^W)^2, per width
+        mean_abs_error  = total_abs_error / num_cases
 
-    print(f"  T={T} done  (total_err={total_abs_error}, max_err={max_error})")
+        results.append({
+            "W": W,
+            "T": T,
+            "total_abs_error": total_abs_error,
+            "mean_abs_error":  mean_abs_error,
+            "max_error":       max_error,
+        })
+
+        print(f"  W={W} T={T} done  (mean_err={mean_abs_error:.3f}, max_err={max_error})")
 
 print()
 
 header = (
-    f"{'T':>4} | "
-    f"{'total_abs_error':>18} | "
-    f"{'mean_abs_error':>16} | "
-    f"{'max_error':>12}"
+    f"{'W':>3} | "
+    f"{'T':>3} | "
+    f"{'total_abs_error':>16} | "
+    f"{'mean_abs_error':>14} | "
+    f"{'max_error':>10}"
 )
 print(header)
 print("-" * len(header))
 
 for r in results:
     print(
-        f"{r['T']:>4} | " # right align
-        f"{r['total_abs_error']:>18} | "
-        f"{r['mean_abs_error']:>16.2f} | "
-        f"{r['max_error']:>12}"
+        f"{r['W']:>3} | "
+        f"{r['T']:>3} | "
+        f"{r['total_abs_error']:>16} | "
+        f"{r['mean_abs_error']:>14.3f} | "
+        f"{r['max_error']:>10}"
     )
 
 with open(CSV_OUTPUT, "w", newline="") as f:
     writer = csv.DictWriter(
         f,
-        fieldnames=["T", "total_abs_error", "mean_abs_error", "max_error"]
+        fieldnames=["W", "T", "total_abs_error", "mean_abs_error", "max_error"]
     )
     writer.writeheader()
     writer.writerows(results)
