@@ -1,6 +1,9 @@
 sim
 *.vcd
+sim_exact
 sim_approx
 sim_mac
 venv/
 __pycache__/
+data/
+mnist_results_smoke.csv
