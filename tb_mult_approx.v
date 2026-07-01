@@ -1,6 +1,7 @@
 module tb_mult_approx;
     parameter WIDTH = 8;
     parameter TRUNC_BITS = 2;
+    parameter CORRECTION = 380;
 
     reg  [WIDTH-1:0]   a, b;
     wire [2*WIDTH-1:0] p;
@@ -10,7 +11,7 @@ module tb_mult_approx;
     integer max_error = 0;
     integer this_error;
 
-    mult_approx #(.WIDTH(WIDTH), .TRUNC_BITS(TRUNC_BITS)) dut (.a(a), .b(b), .product(p));
+    mult_approx #(.WIDTH(WIDTH), .TRUNC_BITS(TRUNC_BITS), .CORRECTION(CORRECTION)) dut (.a(a), .b(b), .product(p));
 
     initial begin
         for (i = 0; i < (1<<WIDTH); i = i + 1) begin 
