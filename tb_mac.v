@@ -1,6 +1,10 @@
 `timescale 1ns/1ps
 
 module tb_mac;
+    parameter WIDTH = 8;
+    parameter TRUNC_BITS = 2;
+    parameter CORRECTION = 0;
+
     reg clk=0;
     reg rst;
     reg valid;
@@ -9,7 +13,10 @@ module tb_mac;
     reg [31:0] expected;
     integer k;
 
-    mac #(2) dut (.clk(clk),.rst(rst),.a(a),.b(b),.valid(valid),.acc(acc));
+    mac #(.WIDTH(WIDTH),
+    .TRUNC_BITS(TRUNC_BITS),
+    .CORRECTION(CORRECTION)
+    ) dut (.clk(clk),.rst(rst),.a(a),.b(b),.valid(valid),.acc(acc));
 
     always #5 clk = ~clk;
 
@@ -22,9 +29,10 @@ module tb_mac;
         rst = 0;
 
         for (k = 0; k<10; k=k+1) begin
-            a=5;b=5;
-            valid=1;
-            expected=expected+a*b; // accumulate the true products
+            a = k * 25;
+            b = k * 25;
+            valid = 1;
+            expected = expected + a * b; // accumulate the true products
             @(posedge clk); // wait for posedge so MAC gets a and b and have its own result and then accumulated
         end
 
