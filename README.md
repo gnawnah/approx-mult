@@ -2,6 +2,12 @@
 
 A self-directed project to learn digital design. An 8×8 multiplier that truncates its operands to trade accuracy for hardware, synthesised on a Zynq-7020 and tested against a real neural network — a small design-space exploration of approximate arithmetic for energy-efficient inference.
 
+The whole project in one figure — how far you can shrink the multiplier before a real network's accuracy falls off a cliff:
+
+![accuracy vs hardware cost](pareto_accuracy_vs_luts.png)
+
+Truncating up to ~T=2 cuts the hardware nearly in half with almost no accuracy loss; past that, accuracy collapses.
+
 ## What it does
 
 Zeroing the low bits of both operands before multiplying makes the hardware smaller but the result slightly wrong:
@@ -71,6 +77,8 @@ A 6-bit exact multiplier and an 8-bit truncated-by-2 come out at almost the same
 
 To see whether any of this actually matters for inference, I ran a 784→128→10 MLP on MNIST using the approximate multiplier for every multiply:
 
+![MNIST accuracy vs truncation](mnist_quantized_accuracy.png)
+
 | TRUNC_BITS | accuracy |
 |------------|----------|
 | 0 (exact)  | 97.73%   |
@@ -89,11 +97,12 @@ Note: the RTL multiplier is unsigned. In the MNIST test, signed weights are hand
 - `tb_mult_exact.v` / `tb_mult_approx.v` / `tb_mac.v` — testbenches
 - `mac.v` — multiply-accumulate unit, `mac.xdc` — constraints file
 - `sweep.py` — sweeps TRUNC_BITS 0–8, runs iverilog + vvp, writes `sweep_results.csv`
-- `plot.py` — error vs truncation plot, `plot_mnist_quantized.py` — MNIST accuracy plot
+- `plot.py` — error vs truncation plot, `plot_mnist_quantized.py` — MNIST accuracy plot, `plot_pareto.py` — accuracy vs hardware cost
 - `train_mnist_weights.py` — trains the MLP and saves weights to `weights/`
 - `mnist_forward.py` — exact MLP inference (baseline)
 - `mnist_quantized.py` — re-runs inference with approximate multiplier, writes `mnist_quantized_results.csv`
 - `grid_results.csv`, `grid_cost.csv` — bit-width sweep results
+- `mac_results.csv`, `power_results.csv` — MAC synthesis and power data
 - `mult_approx_utilisation_synth.txt`, `mult_exact_utilisation_synth.txt` — Vivado reports
 
 ## Run it
@@ -102,8 +111,9 @@ Note: the RTL multiplier is unsigned. In the MNIST test, signed weights are hand
 # error sweep
 python3 sweep.py
 
-# plot (pandas + matplotlib are in the venv, not system Python)
+# plots (pandas + matplotlib are in the venv, not system Python)
 venv/bin/python3 plot.py
+venv/bin/python3 plot_pareto.py
 
 # MNIST sweep (train once, then run quantized inference across truncation levels)
 venv/bin/python3 train_mnist_weights.py
