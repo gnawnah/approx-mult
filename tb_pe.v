@@ -6,9 +6,9 @@ module tb_pe;
 
     reg clk = 0;
     reg rst;
-    reg [WIDTH-1:0] a_in, b_in;
+    reg [WIDTH-1:0] a_in = 0, b_in = 0;
     wire [WIDTH-1:0] a_out, b_out;
-    reg [ACC_WIDTH-1:0] c;
+    wire [ACC_WIDTH-1:0] c;
 
     pe #(.WIDTH(WIDTH),
         .TRUNC_BITS(TRUNC_BITS), 
@@ -19,19 +19,27 @@ module tb_pe;
     always #5 clk = ~clk;
 
     initial begin
+
+        $monitor("t=%0t, a_in=%0d, b_in=%0d, acc=%0d, a_out=%0d, b_out=%0d",
+            $time, a_in, b_in, c, a_out, b_out
+        );
+
         rst = 1;
         @(posedge clk);
         @(posedge clk);
         rst = 0;
 
+        @(negedge clk);
         a_in = 2;
         b_in = 3;
         @(posedge clk);
 
+        @(negedge clk);
         a_in = 4;
         b_in = 5;
         @(posedge clk);
 
+        @(negedge clk);
         a_in = 1;
         b_in = 6;
         @(posedge clk);
@@ -40,7 +48,6 @@ module tb_pe;
 
         @(posedge clk);
 
-        $display("acc=%0d",c);
         $finish;
     end
 endmodule
