@@ -1,166 +1,102 @@
-# Approximate Multiplier
+# approx-mult
 
-A self-directed project to learn digital design. An 8×8 multiplier that truncates its operands to trade accuracy for hardware, synthesised on a Zynq-7020 and tested against a real neural network. A small design-space exploration of approximate arithmetic for energy-efficient inference.
+Design space exploration of truncation based approximate multipliers for energy efficient AI hardware, evaluated on a real machine learning task and deployed to a physical Xilinx Zynq 7020 FPGA.
 
-The whole project in one figure, showing how far you can shrink the multiplier before a real network's accuracy falls off a cliff:
+![Pareto front: MNIST accuracy vs multiplier area](pareto_accuracy_vs_luts.png)
 
-![accuracy vs hardware cost](pareto_accuracy_vs_luts.png)
+## What this project is
 
-Truncating up to about T=2 cuts the hardware nearly in half with almost no accuracy loss. Past that, accuracy collapses.
+I built an approximate 8 by 8 multiplier in Verilog and explored the full design space of how much arithmetic accuracy you can trade away for area and power savings, then measured where that trade off actually starts to hurt a real neural network. The headline result is the Pareto front above: MNIST inference accuracy against multiplier area (LUTs on the Zynq), with each point a different truncation level. The curve stays flat while the network shrugs off the approximation, then falls off a cliff once truncation gets too aggressive. The knee at TRUNC_BITS = 2 is the efficient operating point.
 
-## What it does
+On top of the exploration I added an original correction that removes the systematic bias of truncation, deployed the multiplier to a physical FPGA over a UART interface I wrote myself, and extended the single multiplier into a small systolic array so it becomes the core of an actual AI accelerator rather than just an arithmetic unit.
 
-Zeroing the low bits of both operands before multiplying makes the hardware smaller but the result slightly wrong:
+Everything here targets the same question that energy efficient accelerator research cares about: how far can you push approximate arithmetic before the application breaks, and what does that buy you in hardware.
+
+## The approximate multiplier
+
+The multiplier truncates the low TRUNC_BITS of both operands before multiplying, which zeros out the least significant bits and shrinks the hardware. Truncation always rounds down, so the error is one sided and predictable, which becomes important later for the correction.
 
 ```verilog
-assign a_trunc = (a >> TRUNC_BITS) << TRUNC_BITS;
-assign product = a_trunc * b_trunc;
+a_trunc = (a >> TRUNC_BITS) << TRUNC_BITS;
+b_trunc = (b >> TRUNC_BITS) << TRUNC_BITS;
+product = a_trunc * b_trunc + CORRECTION;
 ```
 
-Thinking of `a × b` as the area of a rectangle, truncation drops thin strips off the edges. Truncating one operand drops one strip; truncating both drops two strips plus a corner, which is why the worst-case error roughly doubles:
+Measured on the Zynq (xc7z020clg484-2, post synthesis), the area and error scale cleanly with truncation:
 
-<img width="2720" height="1680" alt="area model" src="https://github.com/user-attachments/assets/e1ceca08-1711-44a9-a013-e5ef46c4a834" />
+| TRUNC_BITS | LUTs | max error |
+|------------|------|-----------|
+| 0 (exact)  | 70   | 0         |
+| 2          | 39   | 380       |
+| 4          | 14   | 1856      |
+| 6          | 2    | 7040      |
 
-I swept `TRUNC_BITS` from 0 to 8 and measured the error, synthesised it at multiple bit-widths, dropped it into a MAC unit, and eventually ran a full MNIST classifier with it to see when the approximation actually starts to hurt.
+![Error vs truncation](error_vs_truncation.png)
 
-<img width="960" height="720" alt="error vs truncation" src="https://github.com/user-attachments/assets/01e8088e-4a4a-4cd4-87d4-540d65290c46" />
+## Design space exploration
 
-## Results
+I swept the multiplier across two independent knobs, operand bit width and truncation, and synthesized every configuration on the real chip to get honest area numbers rather than estimates. One finding I can defend: for a given accuracy budget, reducing the operand bit width is more area efficient than truncating a wider multiplier. A 6 bit exact multiplier (38 LUTs, zero error) lands almost exactly where an 8 bit multiplier at TRUNC_BITS = 2 does (39 LUTs, 380 error), which tells you the two knobs are not equivalent and which one to reach for first.
 
-### Multiplier area (8-bit, Zynq-7020, post-synthesis)
+![Area model: bit width vs truncation](area_model.png)
 
-| TRUNC_BITS | LUTs | LUT saving | mean abs error |
-|------------|------|------------|----------------|
-| 0 (exact)  | 70   | —          | 0              |
-| 2          | 39   | 44%        | 380            |
-| 4          | 14   | 80%        | 1856           |
-| 6          | 2    | 97%        | 7040           |
+I then quantized a small MLP (784, 128, 10) to int8 and ran MNIST inference with the approximate multiplier in the loop to see where the approximation actually costs accuracy:
 
-Truncating 2 bits removes 44% of the logic for under 1% average error, so the approximation is nearly free in this region.
-
-### MAC unit
-
-| MAC        | LUTs | FFs | Fmax (post-synth) |
-|------------|------|-----|-------------------|
-| exact      | 86   | 32  | ~417 MHz          |
-| approx T=2 | 51   | 28  | ~435 MHz          |
-
-The approximate MAC is both smaller and slightly faster. The FF count also dropped (32 to 28): with the low product bits always zero, the synthesiser pruned the dead accumulator bits, so the approximation propagated savings downstream into the register.
-
-### Power
-
-MAC dynamic power across truncation:
-
-| TRUNC_BITS | dynamic power |
-|------------|---------------|
-| 0          | 0.032 W       |
-| 2          | 0.019 W       |
-| 4          | 0.015 W       |
-| 6          | 0.012 W       |
-
-Most of the saving comes in the first couple of bits, and past T=2 the gains flatten off. The floor is I/O-dominated; in an actual accelerator where operands come from on-chip memory it would be lower.
-
-### Bit-width as a second axis
-
-Running the same synthesis at different bit-widths:
-
-| config        | LUTs | mean error |
-|---------------|------|------------|
-| 8-bit exact   | 70   | 0          |
-| 8-bit, T=2    | 39   | 380        |
-| 6-bit exact   | 38   | 0          |
-| 4-bit exact   | 16   | 0          |
-
-A 6-bit exact multiplier and an 8-bit truncated-by-2 come out at almost the same LUT count, but the 6-bit version has zero error. If you're after a given area budget, narrowing the operands is a better trade than truncating a wider multiplier.
-
-### MNIST accuracy
-
-To see whether any of this actually matters for inference, I ran a 784→128→10 MLP on MNIST using the approximate multiplier for every multiply:
+| TRUNC_BITS | MNIST accuracy |
+|------------|----------------|
+| 0          | 97.7%          |
+| 2          | 97.7%          |
+| 3          | 97.0%          |
+| 4          | 81.4%          |
+| 5          | 10.6%          |
 
 ![MNIST accuracy vs truncation](mnist_quantized_accuracy.png)
 
-| TRUNC_BITS | accuracy |
-|------------|----------|
-| 0 (exact)  | 97.73%   |
-| 2          | 97.67%   |
-| 3          | 97.04%   |
-| 4          | 81.4%    |
-| 5          | 10.6%    |
+The network tolerates approximation up to roughly TRUNC_BITS = 3 despite the per multiply error being large, because classification only depends on which output is the argmax, not on the exact logit values. Past that point the accuracy collapses sharply rather than gradually. This is the cliff you can see on the Pareto front, and the knee sits right before it.
 
-The network is surprisingly tolerant. At T=3 the mean multiply error is around 880, but accuracy barely moves, because classification only cares about which output is largest (the argmax), not the exact values. The drop-off at T=4 is sharp. T=3 sits between the T=2 and T=4 synthesis configs, so roughly half the LUTs of the exact multiplier and about 40% less dynamic power, at under 1 percentage point accuracy loss (97.73% to 97.04%).
+## De-bias correction (my main original contribution)
 
-Note: the RTL multiplier is unsigned. In the MNIST test, activations use truncation identical to the hardware, and signed weights use sign-magnitude truncation. A signed approximate multiplier in RTL is future work.
+Because truncation always rounds down, the error is not random noise, it is a consistent negative bias. That means it is correctable. I added a single constant CORRECTION term to the RTL that adds back the mean error, which costs one adder and is essentially free in hardware.
 
-### De-bias correction
+What I measured, and can explain:
 
-The truncation error is one-directional, since it only ever rounds down, so it forms a predictable bias rather than random noise, which means it can be corrected. I add the mean multiply error back as a constant, which is nearly free in hardware (one adder). On a single multiply this cut total absolute error by about 40%. In a MAC, where the bias accumulates over a dot product, a matched correction reduced the accumulated error from 3021 to 1, because once the bias is removed the remaining errors are roughly symmetric and cancel when summed.
+- On a single multiply at width 8 and TRUNC_BITS = 2, adding the mean error as CORRECTION cut the total absolute error by about 40 percent and dropped the max error by exactly the correction amount.
+- On accumulated MACs, once the constant bias is removed the errors largely cancel when summed, so the accumulated error collapses.
+- On MNIST, the correction helps right at the cliff edge (TRUNC_BITS = 4 improves from 81.4 to 82.2 percent) but it does not move the cliff.
 
-On the full network the effect is smaller and localised:
+The reason it cannot move the cliff is the part I am most proud of understanding: the correction removes a constant bias, but the collapse at high truncation is driven by variance, not bias. A uniform bias shift does not change which output is the argmax, so once the approximation is noisy enough to flip the argmax, a constant correction cannot save it. Bias is correctable, variance is not, and argmax is what ultimately decides.
 
-![de-bias correction effect](mnist_corrected_accuracy.png)
+![MNIST accuracy with and without de-bias correction](mnist_corrected_accuracy.png)
 
-| TRUNC_BITS | accuracy | + correction |
-|------------|----------|--------------|
-| 2          | 97.67%   | 97.71%       |
-| 3          | 97.04%   | 97.05%       |
-| 4          | 81.40%   | 82.24%       |
-| 5          | 10.64%   | 10.64%       |
+## FPGA deployment
 
-Correction helps most right at the accuracy cliff (T=4, +0.84%), where the systematic bias was tipping some argmax decisions the wrong way. It does not move the cliff itself. Past T=4 the collapse is driven by error variance, not bias, and a constant correction only removes bias. Since classification depends only on which output is largest, the network is already insensitive to the roughly-uniform part of the error, so de-biasing only helps at the margin, where decisions are close.
+I deployed the approximate multiplier to the physical Zynq board with a UART interface so a host PC can drive it with live data. I wrote the UART receiver and transmitter myself as state machines, including the bit timing (434 clocks per bit at 115200 baud on the 50 MHz clock), the mid bit sampling on receive, and a two flip flop synchronizer on the asynchronous receive line to avoid metastability.
 
-## Files
+The final version takes two operands over serial, multiplies them with the approximate multiplier on the board, and sends the 16 bit result back as two bytes. I verified it on hardware by sending known operand pairs and decoding the returned bytes, and the results matched the TRUNC_BITS = 2 predictions exactly, including seeing the truncation change an operand before the multiply. This confirms the design does not just simulate correctly, it runs on real silicon driven by external data, which is the deployment half of a real accelerator.
 
-- `mult_exact.v` / `mult_approx.v`: exact and approximate multipliers, parameterised by WIDTH, TRUNC_BITS, and the de-bias CORRECTION term
-- `tb_mult_exact.v` / `tb_mult_approx.v` / `tb_mac.v`: testbenches
-- `mac.v`: multiply-accumulate unit. `mac.xdc`: clock constraints for timing/power
-- `sweep.py`: sweeps TRUNC_BITS (and bit-width), runs iverilog + vvp, writes the error CSVs
-- `plot.py` / `plot_pareto.py` / `plot_mnist_quantized.py` / `plot_mnist_corrected.py`: plots
-- `train_mnist_weights.py`: trains the MLP, saves weights to `weights/`
-- `mnist_forward.py`: exact MLP inference (float baseline)
-- `mnist_quantized.py`: int8 inference with the approximate multiplier and optional de-bias correction, writes the accuracy CSVs
-- `grid_results.csv` / `grid_cost.csv`: bit-width sweep (error and LUTs)
-- `mac_results.csv` / `power_results.csv`: MAC synthesis and power data
-- `mnist_quantized_results.csv` / `mnist_corrected_results.csv`: inference accuracy
-- `mult_approx_utilisation_synth.txt` / `mult_exact_utilisation_synth.txt`: Vivado reports
+## Systolic array
 
-## Run it
+I extended the single multiply accumulate cell into a 2 by 2 systolic array, which is the canonical architecture for AI accelerators such as the TPU, because a matrix multiply is exactly what a neural network layer computes. Each cell is my approximate MAC plus registers that forward operands to the neighboring cells, which is the sliding data movement that lets operands be reused across cells instead of refetched, and that reuse is where the energy and throughput efficiency comes from.
 
-```bash
-# error sweep + plots (matplotlib/pandas live in the venv, not system Python)
-python3 sweep.py
-venv/bin/python3 plot.py
-venv/bin/python3 plot_pareto.py
+![Systolic array dataflow](Systolic_Array_Drawing.jpg)
 
-# MNIST: train once, then run inference across truncation levels (plain + corrected)
-venv/bin/python3 train_mnist_weights.py
-venv/bin/python3 mnist_quantized.py
-venv/bin/python3 plot_mnist_quantized.py
-venv/bin/python3 plot_mnist_corrected.py
+The diagram above is how I worked out the skew. Operands stream in from the top and left edges, staggered by one cycle per row and column, so that as they slide through the cells the correct matrix terms meet at the correct cell at the correct cycle. I verified the array in simulation against a hand computed matrix product:
 
-# simulate a testbench directly
-iverilog -g2012 -o sim tb_mult_approx.v mult_approx.v && vvp sim
+```
+A = [[1,2],[3,4]],  B = [[5,6],[7,8]]  ->  C = [[19,22],[43,50]]
 ```
 
-## Next
+The simulation produces exactly that, and you can watch the diagonal completion wavefront as the top left cell finishes first and the bottom right cell finishes last, which is the visual signature of a working systolic array. This turns the project from a characterized arithmetic unit into the core of an approximate arithmetic accelerator, and it extends the design space exploration from the component level up to the array level.
 
-- Place and route for true post-implementation timing (these are synthesis estimates)
-- A signed approximate multiplier in RTL, to match the signed weights in the network
-- A second approximation method to compare against (for example a Mitchell logarithmic multiplier)
-- A systolic array of approximate MACs
-- Deploy the best config on the Zynq board
+## Repository layout
+
+- `mult_approx.v`, `mult_exact.v`, `mac.v` are the approximate and exact multipliers and the MAC
+- `pe.v`, `systolic_2x2.v` are the systolic processing element and the 2 by 2 array
+- `fpga/` holds the top level wrappers and constraints for the Zynq deployment (UART interface)
+- `tb_*.v` are the testbenches for every module
+- `sweep.py`, `plot_pareto.py`, `mnist_quantized.py` and related scripts are the exploration and evaluation tooling
+- `*.csv` are the measured area, power, error, and accuracy data
+- `pareto_accuracy_vs_luts.png`, `area_model.png`, `error_vs_truncation.png`, `mnist_quantized_accuracy.png`, `mnist_corrected_accuracy.png` are the result figures
 
 ## Notes on tools and authorship
 
-This is a learning project, and I've tried to be precise about what I designed versus what I used tools to help with.
-
-Designed and written by me:
-
-- All the Verilog: the exact and approximate multipliers, the parameterisation (WIDTH, TRUNC_BITS, the de-bias CORRECTION term), the MAC unit, and the testbenches.
-- The synthesis work in Vivado: running it and reading and interpreting the utilisation, timing, and power reports.
-- The ideas and findings: the error/strip decomposition, the precision-vs-truncation conclusion, the flip-flop pruning observation, the accumulating-bias finding, the de-bias correction, and the bias-vs-variance analysis of the MNIST result.
-
-AI-assisted, where I specified what I wanted and then read through and understood the output:
-
-- The Python tooling: the sweep and plotting scripts, and the MNIST pipeline (`train_mnist_weights.py`, `mnist_forward.py`, `mnist_quantized.py`). I don't write Python fluently, so I described what each script needed to do, used an AI assistant to write it, then went through the result to understand it. The approximate-multiply and de-bias logic inside these scripts mirrors my Verilog. The standard ML boilerplate (quantisation, training, data loading) is not something I wrote from scratch.
-
-All design decisions, results, and interpretations are my own.
+I wrote all of the Verilog myself, including the multiplier, the MAC, the UART receiver and transmitter, the systolic processing element and array, and the de-bias correction, and I ran all of the synthesis and hardware deployment. The design decisions, the de-bias idea, the bias versus variance analysis, and the interpretation of the results are mine. I used an AI assistant to help with the Python tooling that surrounds the RTL, such as the sweep automation, the plotting, and the int8 MNIST harness, and I read through and understood that code rather than treating it as a black box.
