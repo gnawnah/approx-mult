@@ -16,11 +16,7 @@ module weight_mem #(
 
     initial begin
         // mem[0] = 0, weights in mem[1..4]
-        mem[0] = 8'd0;
-        mem[1] = 8'd5;
-        mem[2] = 8'd6;
-        mem[3] = 8'd7;
-        mem[4] = 8'd8;
+        $readmemh("weights.hex", mem);
     end
 
     always @(posedge clk) begin

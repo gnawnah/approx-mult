@@ -12,7 +12,7 @@ module addr_gen #(
     always @(posedge clk) begin
         if(rst)
             counter <= 0;
-        else if(counter< 2'd3) //only count up while below 3
+        else if(counter < 2'd3) //only count up while below 3
             counter <= counter + 1; // hold at 3, stays at default case (no input)
     end
 
