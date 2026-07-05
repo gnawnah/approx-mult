@@ -1,5 +1,5 @@
 module addr_gen #(
-    parameter WIDTH = 8, parameter DEPTH = 4, parameter ADDR = 2
+    parameter WIDTH = 8, parameter DEPTH = 5, parameter ADDR = 3
 )(
     input wire clk,
     input wire rst,
@@ -12,27 +12,27 @@ module addr_gen #(
     always @(posedge clk) begin
         if(rst)
             counter <= 0;
-        else
-            counter <= counter + 1;
+        else if(counter< 2'd3) //only count up while below 3
+            counter <= counter + 1; // hold at 3, stays at default case (no input)
     end
 
     always @(*) begin
         case(counter)
             2'b00: begin
-                addr0 = 0;
+                addr0 = 1;
                 addr1 = 0;
             end
             2'b01: begin
-                addr0 = 2;
-                addr1 = 1;
+                addr0 = 3;
+                addr1 = 2;
             end
             2'b10: begin
                 addr0 = 0;
-                addr1 =3
+                addr1 = 4;
             end
             default: begin
                 addr0 = 0;
-                addr1 = 0
+                addr1 = 0;
             end
         endcase
 
