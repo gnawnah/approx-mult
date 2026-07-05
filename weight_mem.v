@@ -2,8 +2,8 @@
 
 module weight_mem #(
     parameter WIDTH = 8,
-    parameter DEPTH = 5,
-    parameter ADDR = 3 // number of bits to address DEPTH words
+    parameter DEPTH = 256,
+    parameter ADDR = 8 // number of bits to address DEPTH words
 )(
     input wire clk,
     input wire [ADDR-1:0] addr0, // port A address
@@ -15,8 +15,8 @@ module weight_mem #(
     reg [WIDTH-1:0] mem [0:DEPTH-1]; // a 1d array that has DEPTH terms, each term is WIDTH bits
 
     initial begin
-        // mem[0] = 0, weights in mem[1..4]
-        $readmemh("weights.hex", mem);
+        `define WEIGHTS_FILE "C:/Users/hw/bram_report/bram_report.srcs/sources_1/imports/Downloads/weights.hex"
+        $readmemh(`WEIGHTS_FILE, mem);
     end
 
     always @(posedge clk) begin
