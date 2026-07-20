@@ -7,3 +7,5 @@ venv/
 __pycache__/
 data/
 mnist_results_smoke.csv
+
+sim_*
