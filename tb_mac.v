@@ -2,7 +2,7 @@
 
 module tb_mac;
     parameter WIDTH = 8;
-    parameter TRUNC_BITS = 2;
+    parameter TRUNC_BITS = 0;
     parameter CORRECTION = 0;
 
     reg clk=0;
