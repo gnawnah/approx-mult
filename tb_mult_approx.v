@@ -1,7 +1,7 @@
 module tb_mult_approx;
     parameter WIDTH = 8;
     parameter TRUNC_BITS = 2;
-    parameter CORRECTION = 380;
+    parameter CORRECTION = 0;
 
     reg  [WIDTH-1:0]   a, b;
     wire [2*WIDTH-1:0] p;

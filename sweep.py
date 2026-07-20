@@ -9,6 +9,7 @@ COMPILED_SIM   = "sim_approx"
 CSV_OUTPUT     = "grid_results.csv"
 
 WIDTHS = [4, 6, 8]
+CORRECTION = 0
 
 results = []
 
@@ -19,9 +20,10 @@ for W in WIDTHS:
             "-g2012",
             f"-Ptb_mult_approx.WIDTH={W}",
             f"-Ptb_mult_approx.TRUNC_BITS={T}",
+            f"-Ptb_mult_approx.CORRECTION={CORRECTION}",
             "-o", COMPILED_SIM,
-            TESTBENCH_FILE,
-            MODULE_FILE,
+        TESTBENCH_FILE,
+        MODULE_FILE,
         ]
         subprocess.run(compile_cmd, check=True)
 
