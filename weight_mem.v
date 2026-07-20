@@ -15,8 +15,9 @@ module weight_mem #(
     reg [WIDTH-1:0] mem [0:DEPTH-1]; // a 1d array that has DEPTH terms, each term is WIDTH bits
 
     initial begin
-        `define WEIGHTS_FILE "C:/Users/hw/bram_report/bram_report.srcs/sources_1/imports/Downloads/weights.hex"
-        $readmemh(`WEIGHTS_FILE, mem);
+        //`define WEIGHTS_FILE "C:/Users/hw/bram_report/bram_report.srcs/sources_1/imports/Downloads/weights.hex"
+        //$readmemh(`WEIGHTS_FILE, mem);
+        $readmemh("weights.hex", mem);
     end
 
     always @(posedge clk) begin

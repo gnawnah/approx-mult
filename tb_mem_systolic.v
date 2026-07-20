@@ -1,8 +1,8 @@
 module tb_mem_systolic;
     parameter WIDTH = 8;
-    parameter DEPTH = 5;
+    parameter DEPTH = 256;
     parameter CORRECTION = 0;
-    parameter ADDR = 3;
+    parameter ADDR = 8;
     parameter ACC_WIDTH = 32;
 
     reg clk = 0;
