@@ -1,0 +1,4 @@
+# The Python here is measurement and plotting tooling, not part of the design.
+# Exclude it from GitHub's language statistics so the bar reflects the hardware.
+# Authorship of the Python is stated explicitly in the README.
+*.py linguist-detectable=false

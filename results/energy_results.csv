@@ -1,0 +1,5 @@
+trunc_bits,luts,accuracy_pct,dynamic_power_W,clk_mhz,energy_per_mac_pJ,latency_per_inference_ms,energy_per_inference_uJ,edp_uJ_ms
+0,86,97.73,0.032,100.0,320.0,1.016,32.52,33.053
+2,51,97.67,0.019,100.0,190.0,1.016,19.31,19.625
+4,21,81.4,0.015,100.0,150.0,1.016,15.24,15.494
+6,4,9.74,0.012,100.0,120.0,1.016,12.2,12.395

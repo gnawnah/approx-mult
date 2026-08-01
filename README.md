@@ -2,43 +2,43 @@
 
 Truncation based approximate multipliers in Verilog, explored across a design space, built up into a 2x2 systolic array with an on-chip weight memory, tested on MNIST, and run on a Zynq 7020.
 
-![Pareto front: MNIST accuracy vs multiplier area](pareto_accuracy_vs_luts.png)
+![Pareto front: MNIST accuracy vs multiplier area](docs/figures/pareto_accuracy_vs_luts.png)
 
-## What it is
+## Overview
 
-I wanted to know how much arithmetic accuracy you can throw away before a neural network stops working, and what you get back in hardware for doing it.
+This project measures how much arithmetic accuracy a neural network tolerates before classification breaks down, and what that approximation returns in hardware cost.
 
-So I wrote an 8x8 approximate multiplier that truncates the low bits of both operands, swept it across bit width and truncation, synthesised every configuration, and measured the error exhaustively. Then I built it up: a MAC, a 2x2 systolic array, and a weight memory feeding the array. That last part is the interesting one, because a systolic array doing matrix multiplication is what an AI accelerator actually is.
+The starting point is an 8x8 approximate multiplier that truncates the low bits of both operands. It is swept across operand bit width and truncation depth, every configuration is synthesised, and the error is measured exhaustively over the full input space. The multiplier is then built up into a MAC, a 2x2 systolic array, and a weight memory feeding that array. A systolic array performing matrix multiplication is the datapath of an AI accelerator, so the array is where the arithmetic result becomes an architectural one.
 
-I also found that truncation error is one sided, which means you can cancel most of it with a single adder, and worked out why that helps less than you would expect.
+Truncation error is one sided. That makes it correctable with a single adder, and the correction is measured here along with the reason it helps less than the error reduction suggests.
 
 ## Systolic array
 
-![Systolic array dataflow](Systolic_Array_Drawing.jpg)
+![Systolic array dataflow](docs/figures/Systolic_Array_Drawing.jpg)
 
-Each cell is an approximate MAC plus two registers that pass the operands on to its neighbours. That forwarding is the whole point: operands slide through the array instead of being fetched again for every cell, which is where the efficiency comes from.
+Each cell is an approximate MAC plus two registers that forward the operands to its neighbours. Operands propagate through the array rather than being re-fetched for every cell, which is the source of the efficiency.
 
-The drawing is how I worked out the timing. Operands enter from the top and left, staggered one cycle per row and column, so the right terms meet at the right cell on the right cycle.
+The drawing above records the timing derivation. Operands enter from the top and left, staggered one cycle per row and column, so that corresponding terms arrive at each cell on the cycle that requires them.
 
-Verified against a hand calculation. A = [[1,2],[3,4]], B = [[5,6],[7,8]] gives C = [[19,22],[43,50]], and the simulation produces exactly that, with the diagonal completion wavefront you would expect.
+Verified against a hand calculation. A = [[1,2],[3,4]] and B = [[5,6],[7,8]] give C = [[19,22],[43,50]]. The simulation reproduces those values, completing on a diagonal wavefront.
 
 ## Weight memory
 
 Dual port ROM holding the weights, written in the pattern Vivado infers as Block RAM, plus an address generator that reproduces the systolic skew and accounts for the memory's one cycle read latency.
 
-Checked against a hand calculation using real quantised MNIST weights. With mem[1..4] = 2, 5, 2, 248 loaded and A = [[1,2],[3,4]] streamed in, the array gives C = [[6, 501], [14, 1007]]. The 248 is the weight -8 read as an unsigned byte, since the multiplier is unsigned.
+Verified against a hand calculation using real quantised MNIST weights. With mem[1..4] = 2, 5, 2, 248 loaded and A = [[1,2],[3,4]] streamed in, the array gives C = [[6, 501], [14, 1007]]. The 248 is the weight -8 read as an unsigned byte, since the multiplier is unsigned.
 
-Synthesis confirms it infers a RAMB18E1, one block serving both read ports. Report is in `bram_utilisation_synth.txt`.
+Synthesis confirms it infers a RAMB18E1, one block serving both read ports. The report is in `syn/reports/bram_utilisation_synth.txt`.
 
 ## De-bias correction
 
-Truncation always rounds down, so the error is not noise, it is a consistent negative bias. That makes it correctable.
+Truncation always rounds down, so the error is a consistent negative bias rather than noise. That makes it correctable.
 
-Mean absolute error at 8 bits with TRUNC_BITS = 2 is 380, so adding 380 back into the product cancels most of the bias for one adder. Across all 65536 input pairs that takes total absolute error from 24.9M down to 15.0M, about 40 percent.
+Mean absolute error at 8 bits with TRUNC_BITS = 2 is 380. Adding 380 back into the product cancels most of the bias at the cost of one adder. Across all 65536 input pairs this reduces total absolute error from 24.9M to 15.0M, approximately 40 percent.
 
-![MNIST accuracy with and without de-bias correction](mnist_corrected_accuracy.png)
+![MNIST accuracy with and without de-bias correction](docs/figures/mnist_corrected_accuracy.png)
 
-The thing I actually learned here: it barely moves the accuracy cliff. Adding a constant shifts every output by the same amount, and classification depends on which output is largest, not on the values. So a uniform shift cannot change the argmax. What kills accuracy at high truncation is variance in the per multiply error, and a constant correction does nothing about variance.
+The correction has almost no effect on the MNIST accuracy cliff. Adding a constant shifts every output by the same amount, and classification depends on which output is largest rather than on its value, so a uniform shift cannot change the argmax. Accuracy at high truncation is limited by the variance of the per multiply error, which a constant correction does not address.
 
 Bias is correctable, variance is not, and argmax is what decides.
 
@@ -50,7 +50,7 @@ b_trunc = (b >> TRUNC_BITS) << TRUNC_BITS;
 product = a_trunc * b_trunc + CORRECTION;
 ```
 
-Error measured over all 65536 input pairs at 8 bits, with CORRECTION = 0 so this is the raw truncation tradeoff:
+Error measured over all 65536 input pairs at 8 bits, with CORRECTION = 0 so this is the raw truncation tradeoff. LUT counts are for `mult_approx` alone.
 
 | TRUNC_BITS | LUTs | mean abs error | max error |
 |------------|------|----------------|-----------|
@@ -59,13 +59,13 @@ Error measured over all 65536 input pairs at 8 bits, with CORRECTION = 0 so this
 | 4          | 14   | 1856           | 7425      |
 | 6          | 2    | 7040           | 28161     |
 
-![Error vs truncation](error_vs_truncation.png)
+![Error vs truncation](docs/figures/error_vs_truncation.png)
 
-I swept two knobs, operand bit width and truncation, and synthesised every configuration.
+The sweep covers two parameters, operand bit width and truncation depth, with every configuration synthesised.
 
-One result worth stating: narrowing the operands beats truncating a wider multiplier. A 6 bit exact multiplier is 38 LUTs with zero error over its range. An 8 bit multiplier at TRUNC_BITS = 2 is 39 LUTs with a mean error of 380. Same hardware, very different error. The two knobs are not interchangeable.
+Narrowing the operands outperforms truncating a wider multiplier at equal area. A 6 bit exact multiplier is 38 LUTs with zero error over its range. An 8 bit multiplier at TRUNC_BITS = 2 is 39 LUTs with a mean error of 380. The hardware cost is the same and the error is not. The two parameters are not interchangeable.
 
-![Area model: bit width vs truncation](area_model.png)
+![Area model: bit width vs truncation](docs/figures/area_model.png)
 
 ## On MNIST
 
@@ -77,61 +77,97 @@ One result worth stating: narrowing the operands beats truncating a wider multip
 | 4          | 81.4%    |
 | 5          | 10.6%    |
 
-![MNIST accuracy vs truncation](mnist_quantized_accuracy.png)
+![MNIST accuracy vs truncation](docs/figures/mnist_quantized_accuracy.png)
 
-The network copes fine up to about TRUNC_BITS = 3 even though the per multiply error is large, because only the argmax matters. Past that it falls off a cliff. The knee at TRUNC_BITS = 2 is the operating point worth having.
+Accuracy holds to TRUNC_BITS = 3 despite a large per multiply error, because classification depends only on the argmax. Beyond that it collapses. TRUNC_BITS = 2 is the knee of the tradeoff and the operating point this design targets.
+
+## Energy
+
+Energy, not area, is the figure of merit for an accelerator. The values below are estimates rather than board measurements. They are derived from Vivado post synthesis dynamic power for the MAC, divided by the clock frequency to give energy per operation. The clock is assumed to be 100 MHz, the constraint in `constr/mac.xdc`, because the figures in the table below predate the scripted synthesis flow and do not record the frequency they were taken at. Rerunning the flow described under Synthesis replaces the assumption with the value read from the timing report.
+
+The network is 784-128-10, giving 784 x 128 + 128 x 10 = 101632 multiply accumulates per inference. A single MAC unit at one operation per cycle takes 1.016 ms per inference.
+
+LUT counts here are for the complete MAC including the 32 bit accumulator, so they are higher than the multiplier-only counts in the design space table above.
+
+| TRUNC_BITS | LUTs | accuracy | pJ per MAC | uJ per inference | vs exact |
+|------------|------|----------|------------|------------------|----------|
+| 0 (exact)  | 86   | 97.7%    | 320        | 32.52            | -        |
+| 2          | 51   | 97.7%    | 190        | 19.31            | 40.6% less |
+| 4          | 21   | 81.4%    | 150        | 15.24            | 53.1% less |
+| 6          | 4    | 9.7%     | 120        | 12.20            | 62.5% less |
+
+![Accuracy vs estimated energy](docs/figures/pareto_accuracy_vs_energy.png)
+
+At TRUNC_BITS = 2 the accuracy cost is 0.06 percentage points and the energy reduction is 40.6 percent.
+
+Between TRUNC_BITS = 0 and TRUNC_BITS = 6 the MAC falls from 86 LUTs to 4, a factor of 21, while energy falls by a factor of 2.7. A component that does not shrink with truncation therefore dominates at high truncation. The 32 bit accumulator, the clock network, and I/O on a module synthesised standalone are all candidates, and the power report has not been broken down far enough to identify which. The consequence is the same in each case: beyond the knee, further truncation costs accuracy and returns little energy. The area data reaches that conclusion independently.
+
+Energy per inference is independent of how many MAC units run in parallel, since power and cycle count scale together. Parallelism reduces latency and energy delay product, not energy.
 
 ## On the FPGA
 
-Deployed the multiplier to a Zynq 7020 with a UART interface so a host PC can drive it. I wrote the RX and TX state machines myself, including the bit timing at 115200 baud off the 50 MHz clock, mid bit sampling on receive, and a two flip flop synchroniser on the async receive line.
+The multiplier is deployed to a Zynq 7020 with a UART interface so a host PC can drive it. The RX and TX state machines are hand written, covering bit timing at 115200 baud from the 50 MHz clock, mid bit sampling on receive, and a two flip flop synchroniser on the asynchronous receive line.
 
-Takes two operands over serial, multiplies on the board, returns the 16 bit result. Checked on hardware that the bytes coming back matched the truncation predictions.
+The design accepts two operands over serial, multiplies on the board, and returns the 16 bit result. The returned bytes were checked on hardware against the truncation predictions.
 
-Later added an AXI4-Lite wrapper so the ARM side can drive it instead of serial, using Vivado and Vitis. Wrapper and C driver are in `vitis/`.
+An AXI4-Lite wrapper was added subsequently so the ARM processing system can drive the accelerator instead of serial, built in Vivado and Vitis. The wrapper is in `rtl/axi/` and the C driver in `sw/`. Its verification status is recorded under Limitations.
 
 ## Running it
 
 Tested with Icarus Verilog 12.0 and Vivado 2026.1, targeting xc7z020clg484-2.
 
 ```
-# multiplier, exhaustive
-iverilog -g2012 -o sim_mult tb_mult_approx.v mult_approx.v && vvp sim_mult
+# all three simulations
+bash flow/run_sims.sh
 
-# 2x2 array, expect 19 22 43 50
-iverilog -g2012 -o sim_sys tb_systolic_2x2.v systolic_2x2.v pe.v mult_approx.v && vvp sim_sys
-
-# memory fed array with real weights, expect 6 501 14 1007
-iverilog -g2012 -o sim_mem tb_mem_systolic.v addr_gen.v weight_mem.v systolic_2x2.v pe.v mult_approx.v && vvp sim_mem
+# self-checking scoreboard, expect FAIL=0
+iverilog -g2012 -o sim_sb tb/tb_mult_approx_scoreboard.v rtl/mult_approx.v && vvp sim_sb
 
 # sweep and figures
-python3 sweep.py
-python3 plot_pareto.py
+python3 flow/sweep.py
+python3 flow/plot_pareto.py
+
+# energy metrics and the energy Pareto
+python3 flow/energy.py
+python3 flow/plot_energy.py
 ```
 
-Run from the repo root. `weight_mem.v` loads `weights.hex` with a relative path. For Vivado, add `weights.hex` to the project as a design source or `$readmemh` will not find it.
+Everything runs from the repo root. `weight_mem.v` loads `weights.hex` by a bare relative path, which is why the file stays at the root and why the working directory matters. For Vivado, add `weights.hex` to the project as a design source or `$readmemh` will not find it.
+
+## Synthesis
+
+Utilisation, power and timing for the MAC are produced by a script rather than read out of the GUI, so every number the energy section depends on comes from a committed report.
+
+```
+vivado -mode batch -source syn/scripts/synth_mac.tcl
+python3 flow/parse_reports.py
+```
+
+The Tcl synthesises `mac` at each truncation level against `constr/mac.xdc` and writes three reports per configuration into `syn/reports/`. `parse_reports.py` turns those into `results/mac_results.csv`, including the clock frequency and worst negative slack, which the previous hand-entered CSV did not record.
 
 ## Layout
 
-- `mult_approx.v`, `mult_exact.v`, `mac.v` are the multipliers and the MAC
-- `pe.v`, `systolic_2x2.v` are the processing element and the array
-- `weight_mem.v`, `addr_gen.v` are the weight memory and its address generator
-- `fpga/` is the top level and constraints for the UART deployment
-- `vitis/` is the AXI4-Lite wrapper and C driver
-- `tb_*.v` are the testbenches
-- `*_utilisation_synth.txt` are Vivado reports
-- `*.png` are the figures
-- `*.py` is the sweep, evaluation and plotting tooling
-- `*.csv` is the measured data
+- `rtl/` is the design: multipliers, MAC, processing element, array, weight memory, address generator. `rtl/axi/` is the AXI4-Lite slave wrapper
+- `tb/` is the testbenches, including the self-checking scoreboard
+- `syn/scripts/` is the synthesis flow, `syn/reports/` is its output
+- `constr/` is the timing and pin constraints
+- `fpga/` is the board top level for the UART deployment
+- `sw/` is the C driver that runs on the ARM side
+- `flow/` is the sweep, evaluation and plotting tooling
+- `results/` is the measured data, except `energy_results.csv` which is derived from `mac_results.csv`
+- `docs/figures/` is the figures
+- `weights.hex` stays at the root because `$readmemh` loads it by bare filename
 
-## What it does not do yet
+## Limitations
 
 - The array is 2x2. The dataflow and memory interface generalise but the parameterised NxN version is not written.
-- Everything is unsigned, so negative weights come through as large positive numbers. Signed arithmetic is the obvious next thing.
-- Power numbers are Vivado post synthesis estimates, not measured on the board.
+- Everything is unsigned, so negative weights come through as large positive numbers. Signed arithmetic is the next extension.
+- Power and energy numbers are Vivado post synthesis estimates, not measured on the board. The energy model also assumes one MAC per cycle and ignores data movement and memory stalls.
+- The AXI4-Lite wrapper synthesised, the block design built and the board booted and ran it, but no verified register read was obtained. A JTAG/DAP fault blocked the last step. The UART path is the one verified on hardware.
 - The sweep is a script running one configuration at a time, not a real automated exploration framework.
 - MNIST here is a small fully connected network, not a CNN.
 
-## Who wrote what
+## Authorship
 
 All the Verilog is mine. The multipliers, the MAC, the de-bias correction, the UART, the processing element and array, the weight memory and address generator, the AXI wrapper. I ran the synthesis and the hardware deployment. The de-bias idea, the bias versus variance conclusion and the systolic timing are mine too.
 
