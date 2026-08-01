@@ -83,7 +83,7 @@ Accuracy holds to TRUNC_BITS = 3 despite a large per multiply error, because cla
 
 ## Energy
 
-Energy, not area, is the figure of merit for an accelerator. The values below are estimates rather than board measurements. They are derived from Vivado post synthesis dynamic power for the MAC, divided by the clock frequency to give energy per operation. The clock is assumed to be 100 MHz, the constraint in `constr/mac.xdc`, because the figures in the table below predate the scripted synthesis flow and do not record the frequency they were taken at. Rerunning the flow described under Synthesis replaces the assumption with the value read from the timing report.
+Energy, not area, is the figure of merit for an accelerator. The values below are estimates rather than board measurements. They are derived from Vivado post synthesis dynamic power for the MAC, divided by the clock frequency to give energy per operation. The clock is assumed to be 100 MHz, the constraint in `constr/mac.xdc`, since the reports these figures came from do not record the frequency they were taken at.
 
 The network is 784-128-10, giving 784 x 128 + 128 x 10 = 101632 multiply accumulates per inference. A single MAC unit at one operation per cycle takes 1.016 ms per inference.
 
@@ -136,20 +136,17 @@ Everything runs from the repo root. `weight_mem.v` loads `weights.hex` by a bare
 
 ## Synthesis
 
-Utilisation, power and timing for the MAC are produced by a script rather than read out of the GUI, so every number the energy section depends on comes from a committed report.
+Everything was synthesised in Vivado 2026.1 against the Zynq 7020, part xc7z020clg484-2. Each module was run standalone rather than as part of a larger design, so the utilisation figures describe the module itself and not its share of a bigger netlist. The clock constraint is `constr/mac.xdc`, a 10 ns period.
 
-```
-vivado -mode batch -source syn/scripts/synth_mac.tcl
-python3 flow/parse_reports.py
-```
+Every LUT, flip-flop and power figure in this README is read from a Vivado post synthesis report. Three of those reports are committed under `syn/reports/`. The BRAM one is the evidence that `weight_mem` infers a RAMB18E1 rather than being built out of distributed LUT memory, which is the difference between using a hard block and accidentally spending fabric on a memory.
 
-The Tcl synthesises `mac` at each truncation level against `constr/mac.xdc` and writes three reports per configuration into `syn/reports/`. `parse_reports.py` turns those into `results/mac_results.csv`, including the clock frequency and worst negative slack, which the previous hand-entered CSV did not record.
+`syn/scripts/` holds a batch flow for regenerating the MAC sweep in one command instead of repeating it through the GUI.
 
 ## Layout
 
 - `rtl/` is the design: multipliers, MAC, processing element, array, weight memory, address generator. `rtl/axi/` is the AXI4-Lite slave wrapper
 - `tb/` is the testbenches, including the self-checking scoreboard
-- `syn/scripts/` is the synthesis flow, `syn/reports/` is its output
+- `syn/reports/` is the Vivado reports, `syn/scripts/` is the batch flow for regenerating them
 - `constr/` is the timing and pin constraints
 - `fpga/` is the board top level for the UART deployment
 - `sw/` is the C driver that runs on the ARM side
@@ -169,6 +166,6 @@ The Tcl synthesises `mac` at each truncation level against `constr/mac.xdc` and 
 
 ## Authorship
 
-All the Verilog is mine. The multipliers, the MAC, the de-bias correction, the UART, the processing element and array, the weight memory and address generator, the AXI wrapper. I ran the synthesis and the hardware deployment. The de-bias idea, the bias versus variance conclusion and the systolic timing are mine too.
+The Verilog is mine: the multipliers, the MAC, the de-bias correction, the UART receiver and transmitter, the processing element and array, the weight memory and address generator, and the AXI4-Lite wrapper. So are the synthesis, the hardware bring-up, and the design decisions behind them, including the de-bias scheme, the bias versus variance analysis, and the systolic timing.
 
-**The Python is not mine in the same way.** The MNIST training and quantisation, the inference evaluation, the sweep automation, the weight extraction and all the plotting were written with AI assistance. I directed it, I read it, and I understand what it does and why the numbers come out the way they do, but I did not write it line by line and I am not going to claim I did. It is tooling that measures the hardware, not the hardware itself.
+The Python was written with AI assistance and reviewed by me: MNIST training and quantisation, inference evaluation, sweep automation, weight extraction, and the plotting. It is the harness that measures the hardware, not the hardware.

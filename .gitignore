@@ -4,3 +4,10 @@ sim_*
 venv/
 .venv/
 __pycache__/
+
+# vivado batch-mode leftovers
+vivado.log
+vivado.jou
+vivado_*.backup.log
+vivado_*.backup.jou
+.Xil/
