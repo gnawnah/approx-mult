@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 
 # MNIST accuracy per truncation level
 acc_by_T = {}
-with open("mnist_quantized_results.csv") as f:
+with open("results/mnist_quantized_results.csv") as f:
     for row in csv.DictReader(f):
         acc_by_T[int(row["trunc_bits"])] = float(row["accuracy"]) * 100
 
 # MAC LUT cost per truncation level (from Vivado synthesis)
 luts_by_T = {}
-with open("mac_results.csv") as f:
+with open("results/mac_results.csv") as f:
     for row in csv.DictReader(f):
         luts_by_T[int(row["trunc_bits"])] = int(row["luts"])
 
@@ -32,5 +32,5 @@ plt.title("Accuracy vs hardware cost across truncation")
 plt.grid(True, alpha=0.3)
 plt.ylim(0, 100)
 plt.tight_layout()
-plt.savefig("pareto_accuracy_vs_luts.png", dpi=150)
-print(f"saved pareto_accuracy_vs_luts.png ({len(T)} configs: T={T})")
+plt.savefig("docs/figures/pareto_accuracy_vs_luts.png", dpi=150)
+print(f"saved docs/figures/pareto_accuracy_vs_luts.png ({len(T)} configs: T={T})")

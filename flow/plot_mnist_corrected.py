@@ -2,7 +2,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv("mnist_corrected_results.csv")
+data = pd.read_csv("results/mnist_corrected_results.csv")
 
 plt.figure(figsize=(7, 4.5))
 plt.plot(data["trunc_bits"], data["accuracy_plain"] * 100,
@@ -18,5 +18,5 @@ plt.ylim(0, 100)
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig("mnist_corrected_accuracy.png", dpi=150)
-print("saved mnist_corrected_accuracy.png")
+plt.savefig("docs/figures/mnist_corrected_accuracy.png", dpi=150)
+print("saved docs/figures/mnist_corrected_accuracy.png")

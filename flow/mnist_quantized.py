@@ -94,7 +94,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mnist", default="data/mnist.npz")
     parser.add_argument("--weights", default="weights/mnist_mlp_128.npz")
-    parser.add_argument("--out", default="mnist_corrected_results.csv")
+    parser.add_argument("--out", default="results/mnist_corrected_results.csv")
     args = parser.parse_args()
 
     mnist_path = Path(args.mnist)

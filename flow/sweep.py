@@ -3,10 +3,10 @@ import subprocess
 import re
 import csv
 
-MODULE_FILE    = "mult_approx.v"
-TESTBENCH_FILE = "tb_mult_approx.v"
+MODULE_FILE    = "rtl/mult_approx.v"
+TESTBENCH_FILE = "tb/tb_mult_approx.v"
 COMPILED_SIM   = "sim_approx"
-CSV_OUTPUT     = "grid_results.csv"
+CSV_OUTPUT     = "results/grid_results.csv"
 
 WIDTHS = [4, 6, 8]
 CORRECTION = 0

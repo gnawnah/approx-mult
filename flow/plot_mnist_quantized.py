@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-data = pd.read_csv("mnist_quantized_results.csv")
+data = pd.read_csv("results/mnist_quantized_results.csv")
 baseline = data.loc[data["trunc_bits"] == 0, "accuracy"].iloc[0]
 
 plt.figure(figsize=(7, 4.5))
@@ -29,4 +29,4 @@ plt.ylim(0, 100)
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig("mnist_quantized_accuracy.png", dpi=150)
+plt.savefig("docs/figures/mnist_quantized_accuracy.png", dpi=150)
