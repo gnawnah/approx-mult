@@ -1,5 +1,5 @@
-config,trunc_bits,luts,ffs,dynamic_power_W
-mac,0,86,32,0.032
-mac,2,51,28,0.019
-mac,4,21,24,0.015
-mac,6,4,20,0.012
+config,trunc_bits,array_n,luts,ffs,dynamic_power_W,clk_mhz,wns_ns,fmax_mhz,power_confidence
+mac,0,256,64,32,0.001183594,100.0,7.709,436.5,Medium
+mac,2,256,42,28,0.000808594,100.0,7.809,456.4,Medium
+mac,4,256,15,24,0.000351562,100.0,7.891,474.2,Medium
+mac,6,256,4,20,0.000214844,100.0,7.879,471.5,Medium

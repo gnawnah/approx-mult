@@ -46,9 +46,10 @@ ax.set_ylim(0, 105)
 ax.set_xlim(0, max(energy) * 1.18)
 
 fig.text(0.01, 0.01,
-         "ESTIMATED: Vivado post-synthesis dynamic power at 100 MHz, "
-         "101632 MACs per inference (784-128-10 MLP).\n"
-         "Not measured on hardware. Excludes static power and data movement.",
+         "ESTIMATED: Vivado post-synthesis dynamic power at 100 MHz, out of context, "
+         "per MAC from an array of 256.\n"
+         "101632 MACs per inference (784-128-10 MLP). Not measured on hardware. "
+         "Excludes static power and data movement.",
          fontsize=7.5, color="dimgray", va="bottom")
 
 fig.tight_layout(rect=(0, 0.06, 1, 1))

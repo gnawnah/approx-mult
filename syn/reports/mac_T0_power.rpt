@@ -1,0 +1,419 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2026 Advanced Micro Devices, Inc. All Rights Reserved.
+-------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version     : Vivado v.2026.1 (win64) Build 6511674 Tue Jun 16 11:02:23 MDT 2026
+| Date             : Sun Aug 16 14:48:50 2026
+| Host             : Dynabook running 64-bit major release  (build 9200)
+| Command          : report_power -file syn/reports/mac_T0_power.rpt
+| Design           : mac_array
+| Device           : xc7z020clg484-2
+| Design State     : synthesized
+| Grade            : commercial
+| Process          : typical
+| Characterization : Production
+-------------------------------------------------------------------------------------------------------------------------------------------------
+
+Power Report
+
+Table of Contents
+-----------------
+1. Summary
+1.1 On-Chip Components
+1.2 Power Supply Summary
+1.3 Confidence Level
+2. Settings
+2.1 Environment
+2.2 Clock Constraints
+3. Detailed Reports
+3.1 By Hierarchy
+
+1. Summary
+----------
+
++--------------------------+--------------+
+| Total On-Chip Power (W)  | 0.410        |
+| Design Power Budget (W)  | Unspecified* |
+| Power Budget Margin (W)  | NA           |
+| Dynamic (W)              | 0.303        |
+| Device Static (W)        | 0.107        |
+| Effective TJA (C/W)      | 11.5         |
+| Max Ambient (C)          | 80.3         |
+| Junction Temperature (C) | 29.7         |
+| Confidence Level         | Medium       |
+| Setting File             | ---          |
+| Simulation Activity File | ---          |
+| Design Nets Matched      | NA           |
++--------------------------+--------------+
+* Specify Design Power Budget using, set_operating_conditions -design_power_budget <value in Watts>
+
+
+1.1 On-Chip Components
+----------------------
+
++----------------+-----------+----------+-----------+-----------------+
+| On-Chip        | Power (W) | Used     | Available | Utilization (%) |
++----------------+-----------+----------+-----------+-----------------+
+| Clocks         |     0.051 |        3 |       --- |             --- |
+| Slice Logic    |     0.147 |    31246 |       --- |             --- |
+|   LUT as Logic |     0.109 |    16387 |     53200 |           30.80 |
+|   CARRY4       |     0.032 |     4608 |     13300 |           34.65 |
+|   Register     |     0.006 |     8192 |    106400 |            7.70 |
+|   Others       |     0.000 |      512 |       --- |             --- |
+| Signals        |     0.105 |    24334 |       --- |             --- |
+| Static Power   |     0.107 |          |           |                 |
+| Total          |     0.410 |          |           |                 |
++----------------+-----------+----------+-----------+-----------------+
+
+
+1.2 Power Supply Summary
+------------------------
+
++-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
+| Source    | Voltage (V) | Total (A) | Dynamic (A) | Static (A) | Powerup (A) | Budget (A)  | Margin (A) |
++-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
+| Vccint    |       1.000 |     0.312 |       0.303 |      0.008 |       NA    | Unspecified | NA         |
+| Vccaux    |       1.800 |     0.011 |       0.000 |      0.011 |       NA    | Unspecified | NA         |
+| Vcco33    |       3.300 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco25    |       2.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco18    |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco15    |       1.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco135   |       1.350 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco12    |       1.200 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vccaux_io |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vccbram   |       1.000 |     0.001 |       0.000 |      0.001 |       NA    | Unspecified | NA         |
+| MGTAVcc   |       1.000 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| MGTAVtt   |       1.200 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| MGTVccaux |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vccpint   |       1.000 |     0.018 |       0.000 |      0.018 |       NA    | Unspecified | NA         |
+| Vccpaux   |       1.800 |     0.010 |       0.000 |      0.010 |       NA    | Unspecified | NA         |
+| Vccpll    |       1.800 |     0.003 |       0.000 |      0.003 |       NA    | Unspecified | NA         |
+| Vcco_ddr  |       1.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco_mio0 |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vcco_mio1 |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
+| Vccadc    |       1.800 |     0.020 |       0.000 |      0.020 |       NA    | Unspecified | NA         |
++-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
+
+
+1.3 Confidence Level
+--------------------
+
++-----------------------------+------------+------------------------------------------------+------------------------------------------------------------------------------------------------------------+
+| User Input Data             | Confidence | Details                                        | Action                                                                                                     |
++-----------------------------+------------+------------------------------------------------+------------------------------------------------------------------------------------------------------------+
+| Design implementation state | Low        | Design is synthesized                          | Accuracy of the tool is not optimal until design is fully placed and routed                                |
+| Clock nodes activity        | High       | User specified more than 95% of clocks         |                                                                                                            |
+| I/O nodes activity          | High       | User specified more than 95% of inputs         |                                                                                                            |
+| Internal nodes activity     | Medium     | User specified less than 25% of internal nodes | Provide missing internal nodes activity with simulation results or by editing the "By Resource Type" views |
+| Device models               | High       | Device models are Production                   |                                                                                                            |
+|                             |            |                                                |                                                                                                            |
+| Overall confidence level    | Medium     |                                                |                                                                                                            |
++-----------------------------+------------+------------------------------------------------+------------------------------------------------------------------------------------------------------------+
+
+
+2. Settings
+-----------
+
+2.1 Environment
+---------------
+
++-----------------------+------------------------+
+| Ambient Temp (C)      | 25.0                   |
+| ThetaJA (C/W)         | 11.5                   |
+| Airflow (LFM)         | 250                    |
+| Heat Sink             | none                   |
+| ThetaSA (C/W)         | 0.0                    |
+| Board Selection       | medium (10"x10")       |
+| # of Board Layers     | 8to11 (8 to 11 Layers) |
+| Board Temperature (C) | 25.0                   |
++-----------------------+------------------------+
+
+
+2.2 Clock Constraints
+---------------------
+
++-------+--------+-----------------+
+| Clock | Domain | Constraint (ns) |
++-------+--------+-----------------+
+| clk   | clk    |            10.0 |
++-------+--------+-----------------+
+
+
+3. Detailed Reports
+-------------------
+
+3.1 By Hierarchy
+----------------
+
++--------------------+-----------+
+| Name               | Power (W) |
++--------------------+-----------+
+| mac_array          |     0.303 |
+|   g_mac[0].u_mac   |     0.002 |
+|     u_mult         |     0.001 |
+|   g_mac[100].u_mac |     0.001 |
+|   g_mac[101].u_mac |     0.001 |
+|   g_mac[102].u_mac |     0.001 |
+|   g_mac[103].u_mac |     0.001 |
+|   g_mac[104].u_mac |     0.001 |
+|   g_mac[105].u_mac |     0.001 |
+|   g_mac[106].u_mac |     0.001 |
+|   g_mac[107].u_mac |     0.001 |
+|   g_mac[108].u_mac |     0.001 |
+|   g_mac[109].u_mac |     0.001 |
+|   g_mac[10].u_mac  |     0.001 |
+|   g_mac[110].u_mac |     0.001 |
+|   g_mac[111].u_mac |     0.001 |
+|   g_mac[112].u_mac |     0.001 |
+|   g_mac[113].u_mac |     0.001 |
+|   g_mac[114].u_mac |     0.001 |
+|   g_mac[115].u_mac |     0.001 |
+|   g_mac[116].u_mac |     0.001 |
+|   g_mac[117].u_mac |     0.001 |
+|   g_mac[118].u_mac |     0.001 |
+|   g_mac[119].u_mac |     0.001 |
+|   g_mac[11].u_mac  |     0.001 |
+|   g_mac[120].u_mac |     0.001 |
+|   g_mac[121].u_mac |     0.001 |
+|   g_mac[122].u_mac |     0.001 |
+|   g_mac[123].u_mac |     0.001 |
+|   g_mac[124].u_mac |     0.001 |
+|   g_mac[125].u_mac |     0.001 |
+|   g_mac[126].u_mac |     0.001 |
+|   g_mac[127].u_mac |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[128].u_mac |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[129].u_mac |     0.001 |
+|   g_mac[12].u_mac  |     0.001 |
+|   g_mac[130].u_mac |     0.001 |
+|   g_mac[131].u_mac |     0.001 |
+|   g_mac[132].u_mac |     0.001 |
+|   g_mac[133].u_mac |     0.001 |
+|   g_mac[134].u_mac |     0.001 |
+|   g_mac[135].u_mac |     0.001 |
+|   g_mac[136].u_mac |     0.001 |
+|   g_mac[137].u_mac |     0.001 |
+|   g_mac[138].u_mac |     0.001 |
+|   g_mac[139].u_mac |     0.001 |
+|   g_mac[13].u_mac  |     0.001 |
+|   g_mac[140].u_mac |     0.001 |
+|   g_mac[141].u_mac |     0.001 |
+|   g_mac[142].u_mac |     0.001 |
+|   g_mac[143].u_mac |     0.001 |
+|   g_mac[144].u_mac |     0.001 |
+|   g_mac[145].u_mac |     0.001 |
+|   g_mac[146].u_mac |     0.001 |
+|   g_mac[147].u_mac |     0.001 |
+|   g_mac[148].u_mac |     0.001 |
+|   g_mac[149].u_mac |     0.001 |
+|   g_mac[14].u_mac  |     0.001 |
+|   g_mac[150].u_mac |     0.001 |
+|   g_mac[151].u_mac |     0.001 |
+|   g_mac[152].u_mac |     0.001 |
+|   g_mac[153].u_mac |     0.001 |
+|   g_mac[154].u_mac |     0.001 |
+|   g_mac[155].u_mac |     0.001 |
+|   g_mac[156].u_mac |     0.001 |
+|   g_mac[157].u_mac |     0.001 |
+|   g_mac[158].u_mac |     0.001 |
+|   g_mac[159].u_mac |     0.001 |
+|   g_mac[15].u_mac  |     0.001 |
+|   g_mac[160].u_mac |     0.001 |
+|   g_mac[161].u_mac |     0.001 |
+|   g_mac[162].u_mac |     0.001 |
+|   g_mac[163].u_mac |     0.001 |
+|   g_mac[164].u_mac |     0.001 |
+|   g_mac[165].u_mac |     0.001 |
+|   g_mac[166].u_mac |     0.001 |
+|   g_mac[167].u_mac |     0.001 |
+|   g_mac[168].u_mac |     0.001 |
+|   g_mac[169].u_mac |     0.001 |
+|   g_mac[16].u_mac  |     0.001 |
+|   g_mac[170].u_mac |     0.001 |
+|   g_mac[171].u_mac |     0.001 |
+|   g_mac[172].u_mac |     0.001 |
+|   g_mac[173].u_mac |     0.001 |
+|   g_mac[174].u_mac |     0.001 |
+|   g_mac[175].u_mac |     0.001 |
+|   g_mac[176].u_mac |     0.001 |
+|   g_mac[177].u_mac |     0.001 |
+|   g_mac[178].u_mac |     0.001 |
+|   g_mac[179].u_mac |     0.001 |
+|   g_mac[17].u_mac  |     0.001 |
+|   g_mac[180].u_mac |     0.001 |
+|   g_mac[181].u_mac |     0.001 |
+|   g_mac[182].u_mac |     0.001 |
+|   g_mac[183].u_mac |     0.001 |
+|   g_mac[184].u_mac |     0.001 |
+|   g_mac[185].u_mac |     0.001 |
+|   g_mac[186].u_mac |     0.001 |
+|   g_mac[187].u_mac |     0.001 |
+|   g_mac[188].u_mac |     0.001 |
+|   g_mac[189].u_mac |     0.001 |
+|   g_mac[18].u_mac  |     0.001 |
+|   g_mac[190].u_mac |     0.001 |
+|   g_mac[191].u_mac |     0.001 |
+|   g_mac[192].u_mac |     0.002 |
+|     u_mult         |     0.001 |
+|   g_mac[193].u_mac |     0.001 |
+|   g_mac[194].u_mac |     0.001 |
+|   g_mac[195].u_mac |     0.001 |
+|   g_mac[196].u_mac |     0.001 |
+|   g_mac[197].u_mac |     0.001 |
+|   g_mac[198].u_mac |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[199].u_mac |     0.001 |
+|   g_mac[19].u_mac  |     0.001 |
+|   g_mac[1].u_mac   |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[200].u_mac |     0.001 |
+|   g_mac[201].u_mac |     0.001 |
+|   g_mac[202].u_mac |     0.001 |
+|   g_mac[203].u_mac |     0.001 |
+|   g_mac[204].u_mac |     0.001 |
+|   g_mac[205].u_mac |     0.001 |
+|   g_mac[206].u_mac |     0.001 |
+|   g_mac[207].u_mac |     0.001 |
+|   g_mac[208].u_mac |     0.001 |
+|   g_mac[209].u_mac |     0.001 |
+|   g_mac[20].u_mac  |     0.001 |
+|   g_mac[210].u_mac |     0.001 |
+|   g_mac[211].u_mac |     0.001 |
+|   g_mac[212].u_mac |     0.001 |
+|   g_mac[213].u_mac |     0.001 |
+|   g_mac[214].u_mac |     0.001 |
+|   g_mac[215].u_mac |     0.001 |
+|   g_mac[216].u_mac |     0.001 |
+|   g_mac[217].u_mac |     0.001 |
+|   g_mac[218].u_mac |     0.001 |
+|   g_mac[219].u_mac |     0.001 |
+|   g_mac[21].u_mac  |     0.001 |
+|   g_mac[220].u_mac |     0.001 |
+|   g_mac[221].u_mac |     0.001 |
+|   g_mac[222].u_mac |     0.001 |
+|   g_mac[223].u_mac |     0.001 |
+|   g_mac[224].u_mac |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[225].u_mac |     0.001 |
+|   g_mac[226].u_mac |     0.001 |
+|   g_mac[227].u_mac |     0.001 |
+|   g_mac[228].u_mac |     0.001 |
+|   g_mac[229].u_mac |     0.001 |
+|   g_mac[22].u_mac  |     0.001 |
+|   g_mac[230].u_mac |     0.001 |
+|   g_mac[231].u_mac |     0.001 |
+|   g_mac[232].u_mac |     0.001 |
+|   g_mac[233].u_mac |     0.001 |
+|   g_mac[234].u_mac |     0.001 |
+|   g_mac[235].u_mac |     0.001 |
+|   g_mac[236].u_mac |     0.001 |
+|   g_mac[237].u_mac |     0.001 |
+|   g_mac[238].u_mac |     0.001 |
+|   g_mac[239].u_mac |     0.001 |
+|   g_mac[23].u_mac  |     0.001 |
+|   g_mac[240].u_mac |     0.001 |
+|   g_mac[241].u_mac |     0.001 |
+|   g_mac[242].u_mac |     0.001 |
+|   g_mac[243].u_mac |     0.001 |
+|   g_mac[244].u_mac |     0.001 |
+|   g_mac[245].u_mac |     0.001 |
+|   g_mac[246].u_mac |     0.001 |
+|   g_mac[247].u_mac |     0.001 |
+|   g_mac[248].u_mac |     0.001 |
+|   g_mac[249].u_mac |     0.001 |
+|   g_mac[24].u_mac  |     0.001 |
+|   g_mac[250].u_mac |     0.001 |
+|   g_mac[251].u_mac |     0.001 |
+|   g_mac[252].u_mac |     0.001 |
+|   g_mac[253].u_mac |     0.001 |
+|   g_mac[254].u_mac |     0.002 |
+|     u_mult         |     0.001 |
+|   g_mac[255].u_mac |     0.002 |
+|     u_mult         |     0.001 |
+|   g_mac[25].u_mac  |     0.001 |
+|   g_mac[26].u_mac  |     0.001 |
+|   g_mac[27].u_mac  |     0.001 |
+|   g_mac[28].u_mac  |     0.001 |
+|   g_mac[29].u_mac  |     0.001 |
+|   g_mac[2].u_mac   |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[30].u_mac  |     0.001 |
+|   g_mac[31].u_mac  |     0.001 |
+|   g_mac[32].u_mac  |     0.001 |
+|   g_mac[33].u_mac  |     0.001 |
+|   g_mac[34].u_mac  |     0.001 |
+|   g_mac[35].u_mac  |     0.001 |
+|   g_mac[36].u_mac  |     0.001 |
+|   g_mac[37].u_mac  |     0.001 |
+|   g_mac[38].u_mac  |     0.001 |
+|   g_mac[39].u_mac  |     0.001 |
+|   g_mac[3].u_mac   |     0.001 |
+|   g_mac[40].u_mac  |     0.001 |
+|   g_mac[41].u_mac  |     0.001 |
+|   g_mac[42].u_mac  |     0.001 |
+|   g_mac[43].u_mac  |     0.001 |
+|   g_mac[44].u_mac  |     0.001 |
+|   g_mac[45].u_mac  |     0.001 |
+|   g_mac[46].u_mac  |     0.001 |
+|   g_mac[47].u_mac  |     0.001 |
+|   g_mac[48].u_mac  |     0.001 |
+|   g_mac[49].u_mac  |     0.001 |
+|   g_mac[4].u_mac   |     0.001 |
+|   g_mac[50].u_mac  |     0.001 |
+|   g_mac[51].u_mac  |     0.001 |
+|   g_mac[52].u_mac  |     0.001 |
+|   g_mac[53].u_mac  |     0.001 |
+|   g_mac[54].u_mac  |     0.001 |
+|   g_mac[55].u_mac  |     0.001 |
+|   g_mac[56].u_mac  |     0.001 |
+|   g_mac[57].u_mac  |     0.001 |
+|   g_mac[58].u_mac  |     0.001 |
+|   g_mac[59].u_mac  |     0.001 |
+|   g_mac[5].u_mac   |     0.001 |
+|   g_mac[60].u_mac  |     0.001 |
+|   g_mac[61].u_mac  |     0.001 |
+|   g_mac[62].u_mac  |     0.001 |
+|   g_mac[63].u_mac  |     0.001 |
+|   g_mac[64].u_mac  |     0.001 |
+|     u_mult         |     0.001 |
+|   g_mac[65].u_mac  |     0.001 |
+|   g_mac[66].u_mac  |     0.001 |
+|   g_mac[67].u_mac  |     0.001 |
+|   g_mac[68].u_mac  |     0.001 |
+|   g_mac[69].u_mac  |     0.001 |
+|   g_mac[6].u_mac   |     0.001 |
+|   g_mac[70].u_mac  |     0.001 |
+|   g_mac[71].u_mac  |     0.001 |
+|   g_mac[72].u_mac  |     0.001 |
+|   g_mac[73].u_mac  |     0.001 |
+|   g_mac[74].u_mac  |     0.001 |
+|   g_mac[75].u_mac  |     0.001 |
+|   g_mac[76].u_mac  |     0.001 |
+|   g_mac[77].u_mac  |     0.001 |
+|   g_mac[78].u_mac  |     0.001 |
+|   g_mac[79].u_mac  |     0.001 |
+|   g_mac[7].u_mac   |     0.001 |
+|   g_mac[80].u_mac  |     0.001 |
+|   g_mac[81].u_mac  |     0.001 |
+|   g_mac[82].u_mac  |     0.001 |
+|   g_mac[83].u_mac  |     0.001 |
+|   g_mac[84].u_mac  |     0.001 |
+|   g_mac[85].u_mac  |     0.001 |
+|   g_mac[86].u_mac  |     0.001 |
+|   g_mac[87].u_mac  |     0.001 |
+|   g_mac[88].u_mac  |     0.001 |
+|   g_mac[89].u_mac  |     0.001 |
+|   g_mac[8].u_mac   |     0.001 |
+|   g_mac[90].u_mac  |     0.001 |
+|   g_mac[91].u_mac  |     0.001 |
+|   g_mac[92].u_mac  |     0.001 |
+|   g_mac[93].u_mac  |     0.001 |
+|   g_mac[94].u_mac  |     0.001 |
+|   g_mac[95].u_mac  |     0.001 |
+|   g_mac[96].u_mac  |     0.001 |
+|   g_mac[97].u_mac  |     0.001 |
+|   g_mac[98].u_mac  |     0.001 |
+|   g_mac[99].u_mac  |     0.001 |
+|   g_mac[9].u_mac   |     0.001 |
++--------------------+-----------+
+
+

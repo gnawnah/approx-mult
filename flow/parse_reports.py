@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 """Build results/mac_results.csv from the Vivado reports in syn/reports/.
 
-Run from the repo root, after syn/scripts/synth_mac.tcl:
-    python3 flow/parse_reports.py
-
-This exists so that no number in the energy analysis is hand-entered. Every
-value below is read out of a committed report, including the clock frequency,
-which the previous hand-typed CSV did not record at all.
+Run from the repo root after syn/scripts/synth_mac.tcl.
 """
 import csv
 import re
@@ -15,6 +10,16 @@ from pathlib import Path
 RPT_DIR = Path("syn/reports")
 OUT_CSV = Path("results/mac_results.csv")
 TRUNC_SET = [0, 2, 4, 6]
+
+
+def read_array_n():
+    """MACs per report. Read rather than hardcoded so the divisor cannot drift."""
+    path = RPT_DIR / "array_n.txt"
+    if not path.exists():
+        raise SystemExit(
+            f"missing {path}. Run syn/scripts/synth_mac.tcl first, which writes it."
+        )
+    return int(path.read_text().strip())
 
 
 def read(path):
@@ -35,11 +40,10 @@ def parse_utilisation(text):
 
 
 def parse_power(text):
-    """Dynamic power in watts, plus the confidence level Vivado assigns.
+    """Dynamic power in watts, plus Vivado's confidence level.
 
-    Confidence matters: a vectorless estimate with default toggle rates reports
-    Low. Reading a SAIF from a real simulation raises it, and that is the
-    difference between a guess about the data and a measurement of it.
+    Confidence is Low for a vectorless estimate and rises when a SAIF from a
+    real simulation is read in.
     """
     dyn = re.search(r"\|\s*Dynamic \(W\)\s*\|\s*([\d.]+)", text)
     if dyn is None:
@@ -68,18 +72,22 @@ def parse_timing(text):
 
 
 def main():
+    n = read_array_n()
     rows = []
     for t in TRUNC_SET:
         luts, ffs = parse_utilisation(read(RPT_DIR / f"mac_T{t}_utilisation.rpt"))
         power_w, confidence = parse_power(read(RPT_DIR / f"mac_T{t}_power.rpt"))
         clk_mhz, wns_ns, fmax_mhz = parse_timing(read(RPT_DIR / f"mac_T{t}_timing.rpt"))
 
+        # Per-instance figures divide by n. Timing does not: the critical path
+        # is one MAC deep either way.
         rows.append({
             "config": "mac",
             "trunc_bits": t,
-            "luts": luts,
-            "ffs": ffs,
-            "dynamic_power_W": power_w,
+            "array_n": n,
+            "luts": round(luts / n),
+            "ffs": round(ffs / n),
+            "dynamic_power_W": round(power_w / n, 9),
             "clk_mhz": clk_mhz,
             "wns_ns": wns_ns,
             "fmax_mhz": fmax_mhz,
@@ -92,12 +100,14 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    header = f"{'T':>2} | {'LUTs':>5} | {'FFs':>4} | {'W':>7} | {'MHz':>6} | {'Fmax':>7} | conf"
+    header = (f"{'T':>2} | {'LUTs':>5} | {'FFs':>4} | {'mW/MAC':>8} | "
+              f"{'MHz':>6} | {'Fmax':>7} | conf")
+    print(f"per-MAC figures, divided from an array of {n}")
     print(header)
     print("-" * len(header))
     for r in rows:
         print(f"{r['trunc_bits']:>2} | {r['luts']:>5} | {r['ffs']:>4} | "
-              f"{r['dynamic_power_W']:>7.4f} | {str(r['clk_mhz']):>6} | "
+              f"{r['dynamic_power_W'] * 1e3:>8.4f} | {str(r['clk_mhz']):>6} | "
               f"{str(r['fmax_mhz']):>7} | {r['power_confidence']}")
 
     confidences = {r["power_confidence"] for r in rows}
