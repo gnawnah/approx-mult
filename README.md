@@ -12,6 +12,8 @@ The starting point is an 8x8 approximate multiplier that truncates the low bits 
 
 Truncation error is one sided. That makes it correctable with a single adder, and the correction is measured here along with the reason it helps less than the error reduction suggests.
 
+This is a self-directed learning project, not coursework and not a research contribution. It exists because I wanted to learn digital design by building something end to end rather than by reading about it. The measurements are real and reproducible from this repository, and the scale is deliberately small: an 8 bit multiplier, a 2x2 array, and a small fully connected network. Where something is estimated rather than measured, or built but not verified, it says so.
+
 ## Systolic array
 
 ![Systolic array dataflow](docs/figures/Systolic_Array_Drawing.jpg)
@@ -83,24 +85,24 @@ Accuracy holds to TRUNC_BITS = 3 despite a large per multiply error, because cla
 
 ## Energy
 
-Energy, not area, is the figure of merit for an accelerator. The values below are estimates rather than board measurements. They are derived from Vivado post synthesis dynamic power for the MAC, divided by the clock frequency to give energy per operation. The clock is assumed to be 100 MHz, the constraint in `constr/mac.xdc`, since the reports these figures came from do not record the frequency they were taken at.
+Energy, not area, is the figure of merit for an accelerator. The values below are estimates rather than board measurements, but every one is derived from a committed Vivado report: dynamic power divided by the clock frequency, both read out of `syn/reports/`.
 
-The network is 784-128-10, giving 784 x 128 + 128 x 10 = 101632 multiply accumulates per inference. A single MAC unit at one operation per cycle takes 1.016 ms per inference.
+The network is 784-128-10, giving 784 x 128 + 128 x 10 = 101632 multiply accumulates per inference. A single MAC unit at one operation per cycle takes 1.016 ms per inference at 100 MHz.
 
-LUT counts here are for the complete MAC including the 32 bit accumulator, so they are higher than the multiplier-only counts in the design space table above.
+Figures are per MAC, divided down from an array of 256 synthesised out of context. Both details change the numbers by an order of magnitude and are explained under Synthesis.
 
-| TRUNC_BITS | LUTs | accuracy | pJ per MAC | uJ per inference | vs exact |
-|------------|------|----------|------------|------------------|----------|
-| 0 (exact)  | 86   | 97.7%    | 320        | 32.52            | -        |
-| 2          | 51   | 97.7%    | 190        | 19.31            | 40.6% less |
-| 4          | 21   | 81.4%    | 150        | 15.24            | 53.1% less |
-| 6          | 4    | 9.7%     | 120        | 12.20            | 62.5% less |
+| TRUNC_BITS | LUTs | FFs | accuracy | pJ per MAC | uJ per inference | vs exact |
+|------------|------|-----|----------|------------|------------------|----------|
+| 0 (exact)  | 64   | 32  | 97.7%    | 11.8       | 1.20             | -        |
+| 2          | 42   | 28  | 97.7%    | 8.1        | 0.82             | 31.7% less |
+| 4          | 15   | 24  | 81.4%    | 3.5        | 0.36             | 70.0% less |
+| 6          | 4    | 20  | 9.7%     | 2.1        | 0.22             | 81.7% less |
 
 ![Accuracy vs estimated energy](docs/figures/pareto_accuracy_vs_energy.png)
 
-At TRUNC_BITS = 2 the accuracy cost is 0.06 percentage points and the energy reduction is 40.6 percent.
+At TRUNC_BITS = 2 the accuracy cost is 0.06 percentage points and the energy reduction is 31.7 percent.
 
-Between TRUNC_BITS = 0 and TRUNC_BITS = 6 the MAC falls from 86 LUTs to 4, a factor of 21, while energy falls by a factor of 2.7. A component that does not shrink with truncation therefore dominates at high truncation. The 32 bit accumulator, the clock network, and I/O on a module synthesised standalone are all candidates, and the power report has not been broken down far enough to identify which. The consequence is the same in each case: beyond the knee, further truncation costs accuracy and returns little energy. The area data reaches that conclusion independently.
+Between TRUNC_BITS = 0 and TRUNC_BITS = 6 the MAC falls from 64 LUTs to 4, a factor of 16, while energy falls by a factor of 5.6. Energy does not track area, and the flip-flop column shows why. At maximum truncation only 4 LUTs of multiplier remain, but 20 flip-flops of accumulator and the clock network driving them do not shrink with the operands. Those set the floor. Beyond the knee, further truncation costs accuracy and returns progressively less energy, which is the conclusion the area data reaches independently.
 
 Energy per inference is independent of how many MAC units run in parallel, since power and cycle count scale together. Parallelism reduces latency and energy delay product, not energy.
 
@@ -138,9 +140,33 @@ Everything runs from the repo root. `weight_mem.v` loads `weights.hex` by a bare
 
 Everything was synthesised in Vivado 2026.1 against the Zynq 7020, part xc7z020clg484-2. Each module was run standalone rather than as part of a larger design, so the utilisation figures describe the module itself and not its share of a bigger netlist. The clock constraint is `constr/mac.xdc`, a 10 ns period.
 
-Every LUT, flip-flop and power figure in this README is read from a Vivado post synthesis report. Three of those reports are committed under `syn/reports/`. The BRAM one is the evidence that `weight_mem` infers a RAMB18E1 rather than being built out of distributed LUT memory, which is the difference between using a hard block and accidentally spending fabric on a memory.
+Every LUT, flip-flop and power figure in this README is read from a Vivado report, and every report is committed under `syn/reports/`. The BRAM one is the evidence that `weight_mem` infers a RAMB18E1 rather than being built out of distributed LUT memory, which is the difference between using a hard block and accidentally spending fabric on a memory.
 
-`syn/scripts/` holds a batch flow for regenerating the MAC sweep in one command instead of repeating it through the GUI.
+The MAC sweep is scripted rather than clicked:
+
+```
+vivado -mode batch -source syn/scripts/synth_mac.tcl
+python3 flow/parse_reports.py
+```
+
+Two decisions in that flow matter more than they look.
+
+**Out of context.** Synthesising a small module normally inserts I/O buffers, and they dominate. Measured with pads, the MAC reported 19 mW of dynamic power of which 17 mW was the pads. Worse, the trend across truncation was partly Vivado deleting the input pads for operand bits that truncation had made unused, which says nothing about the arithmetic. A MAC is internal logic in any real accelerator, so it is synthesised with `-mode out_of_context` and measured without pads.
+
+**An array of 256.** One MAC out of context reports 0.001 W, the resolution floor of `report_power`, so every truncation level would read the same value. `syn/mac_array.v` instantiates 256 copies to lift the total clear of that floor, and the per-MAC figures are divided back down. The copies take per-index XOR constants on their operands so synthesis cannot merge them into one shared multiplier, and every accumulator drives a slice of a wide output so none are pruned away.
+
+### Timing
+
+Worst negative slack against the 10 ns constraint gives maximum frequency:
+
+| TRUNC_BITS | Fmax |
+|------------|------|
+| 0 (exact)  | 437 MHz |
+| 2          | 456 MHz |
+| 4          | 474 MHz |
+| 6          | 472 MHz |
+
+Truncation buys speed as well as area and energy, because dropping low operand bits shortens the carry chains through the partial product adder. All four configurations meet the 100 MHz constraint with a wide margin, so timing is not what limits this design.
 
 ## Layout
 
@@ -159,13 +185,28 @@ Every LUT, flip-flop and power figure in this README is read from a Vivado post 
 
 - The array is 2x2. The dataflow and memory interface generalise but the parameterised NxN version is not written.
 - Everything is unsigned, so negative weights come through as large positive numbers. Signed arithmetic is the next extension.
-- Power and energy numbers are Vivado post synthesis estimates, not measured on the board. The energy model also assumes one MAC per cycle and ignores data movement and memory stalls.
+- Power and energy numbers are Vivado post synthesis estimates, not measured on the board. Vivado rates their confidence as Medium because switching activity is estimated vectorlessly from default toggle rates rather than taken from a simulation of real data. Reading a SAIF from an MNIST-operand run would replace that assumption with measured activity.
+- The energy model assumes one MAC per cycle and ignores data movement and memory stalls.
 - The AXI4-Lite wrapper synthesised, the block design built and the board booted and ran it, but no verified register read was obtained. A JTAG/DAP fault blocked the last step. The UART path is the one verified on hardware.
 - The sweep is a script running one configuration at a time, not a real automated exploration framework.
 - MNIST here is a small fully connected network, not a CNN.
 
 ## Authorship
 
-The Verilog is mine: the multipliers, the MAC, the de-bias correction, the UART receiver and transmitter, the processing element and array, the weight memory and address generator, and the AXI4-Lite wrapper. So are the synthesis, the hardware bring-up, and the design decisions behind them, including the de-bias scheme, the bias versus variance analysis, and the systolic timing.
+I used an AI assistant on parts of this project. Splitting it out explicitly, because a reader cannot tell from the files and because the distinction is the whole point of the exercise.
 
-The Python was written with AI assistance and reviewed by me: MNIST training and quantisation, inference evaluation, sweep automation, weight extraction, and the plotting. It is the harness that measures the hardware, not the hardware.
+**Written by me, line by line:**
+
+- Every Verilog file in `rtl/` and `fpga/`: the multipliers, the MAC, the de-bias correction, the UART receiver and transmitter, the processing element and array, the weight memory and address generator, and the AXI4-Lite wrapper
+- `syn/mac_array.v`, the synthesis measurement harness
+- All the testbenches in `tb/`, including the self-checking scoreboard
+- Every synthesis run and the hardware deployment
+- The design decisions and the analysis: the de-bias scheme, the bias versus variance conclusion, and the systolic dataflow and timing
+
+**Written with AI assistance, then read and understood:**
+
+- Every Python file in `flow/`: MNIST training and quantisation, inference evaluation, sweep automation, weight extraction, plotting, and the Vivado report parser
+- The Tcl in `syn/scripts/`
+- Much of the prose in this README
+
+The dividing line is that the hardware is mine and the tooling that measures it is not. I can explain any line in either category, including why the synthesis runs out of context and why the harness instantiates 256 copies, but I did not type the second category from scratch and will not claim otherwise.
