@@ -8,11 +8,11 @@ Truncation based approximate multipliers in Verilog, explored across a design sp
 
 This project measures how much arithmetic accuracy a neural network tolerates before classification fails, and what that approximation returns in hardware cost.
 
-An 8x8 approximate multiplier truncates the low bits of both operands. It is swept across operand width and truncation depth, every configuration is synthesised, and the error is measured over all 65536 input pairs. The multiplier is then built up into a MAC, a 2x2 systolic array, and a weight memory feeding the array.
+An 8x8 approximate multiplier truncates the low bits of both operands. It is swept across operand width and truncation depth, every configuration is synthesised, and the error is measured over all 65536 input pairs. The multiplier is then built up into a multiply-accumulate (MAC), a 2x2 systolic array, and a weight memory feeding the array.
 
 Truncation error is one sided and therefore correctable with a single adder. That correction is measured here, along with the reason it improves classification accuracy less than the error reduction suggests.
 
-This is a self-directed project rather than coursework. The scale is deliberately small, an 8 bit multiplier, a 2x2 array, and a small fully connected network. All measurements are reproducible from this repository, and estimated or unverified results are marked as such.
+This is a self-directed learning project. The scale is quite small, an 8 bit multiplier, a 2x2 array, and a small fully connected network.
 
 ## Systolic array
 
@@ -20,7 +20,7 @@ This is a self-directed project rather than coursework. The scale is deliberatel
 
 Each cell contains an approximate MAC and two registers that forward the operands to its neighbours. Operands propagate through the array rather than being re-fetched for every cell, which is the source of the efficiency.
 
-The drawing above records the timing derivation. Operands enter from the top and left, staggered one cycle per row and column, so that corresponding terms arrive at each cell on the cycle it requires them.
+The drawing above records the timing derivation. Operands enter from the top and left, moved one cycle per row and column, so that corresponding terms arrive at each cell on the cycle it requires them.
 
 Verified against a hand calculation. A = [[1,2],[3,4]] and B = [[5,6],[7,8]] give C = [[19,22],[43,50]], which the simulation reproduces.
 
@@ -34,7 +34,7 @@ Synthesis infers a RAMB18E1, one block serving both read ports, placing the memo
 
 ## De-bias correction
 
-Truncation always rounds down, so the error is a consistent negative bias rather than noise, which makes it correctable.
+Truncation always rounds down, so the error is a consistent negative bias, thus correctable.
 
 Mean absolute error at 8 bits with TRUNC_BITS = 2 is 380. Adding 380 to every product cancels most of the bias at the cost of one adder, reducing total absolute error across all 65536 input pairs from 24.9M to 15.0M, approximately 40 percent.
 
@@ -189,4 +189,4 @@ Truncation reduces delay as well as area, because dropping low operand bits shor
 
 The hardware is mine. Every Verilog file in `rtl/` and `fpga/`, the measurement harness in `syn/mac_array.v`, the testbenches in `tb/`, every synthesis run and the hardware deployment, and the design decisions behind them, including the de-bias scheme and the bias versus variance analysis.
 
-The tooling was written with AI assistance and reviewed by me. The Python in `flow/`, the Tcl in `syn/scripts/`, and much of the prose in this README.
+The tooling was written with AI assistance and reviewed by me. The Python in `flow/` and the Tcl in `syn/scripts/`.
