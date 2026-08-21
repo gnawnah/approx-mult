@@ -11,3 +11,13 @@ vivado.jou
 vivado_*.backup.log
 vivado_*.backup.jou
 .Xil/
+
+# xsim leftovers
+xsim.dir/
+*.pb
+xvlog.log
+xelab.log
+xsim.log
+xsim.jou
+webtalk*.log
+webtalk*.jou
