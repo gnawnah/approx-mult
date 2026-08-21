@@ -13,7 +13,7 @@ interface mac_if #(parameter WIDTH = 8) (input logic clk);
 
     clocking mon_cb @(posedge clk);
         default input #1step output #0;
-        input a, b, valid, rst;
+        input a, b, valid, rst, acc;
     endclocking
 
     modport DRV (clocking drv_cb);
