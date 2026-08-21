@@ -1,13 +1,25 @@
-interface mac_if;
+interface mac_if #(parameter WIDTH = 8) (input logic clk);
 
-    parameter WIDTH = 8;
-    
-    logic clk = 0;
     logic rst;
     logic valid;
-    logic [WIDTH-1] a, b;
+    logic [WIDTH-1:0] a, b;
     logic [4*WIDTH-1:0] acc;
-    logic [4*WIDTH-1:0] expected;
+
+    clocking drv_cb @(posedge clk);
+        default input #1step output #0;
+        output rst, a, b, valid;
+        input acc;
+    endclocking
+
+    clocking mon_cb @(posedge clk);
+        default input #1step output #0;
+        input a, b, valid, rst;
+    endclocking
+
+    modport DRV (clocking drv_cb);
+
+    modport MON (clocking mon_cb);
+
 
 
 
