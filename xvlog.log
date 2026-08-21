@@ -1,0 +1,4 @@
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/hw/Documents/GitHub/approx-mult/tb/tb_mult_approx_scoreboard.v" into library work
+INFO: [VRFC 10-311] analyzing module tb_mult_approx_scoreboard
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/hw/Documents/GitHub/approx-mult/rtl/mult_approx.v" into library work
+INFO: [VRFC 10-311] analyzing module mult_approx

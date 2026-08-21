@@ -1,0 +1,13 @@
+#-----------------------------------------------------------
+# Webtalk v2020.2 (64-bit)
+# SW Build 3064766 on Wed Nov 18 09:12:45 MST 2020
+# IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
+# Start of session at: Fri Aug 21 20:32:17 2026
+# Process ID: 28332
+# Current directory: C:/Users/hw/Documents/GitHub/approx-mult
+# Command line: wbtcv.exe -mode batch -source C:/Users/hw/Documents/GitHub/approx-mult/xsim.dir/sim_sb/webtalk/xsim_webtalk.tcl -notrace
+# Log file: C:/Users/hw/Documents/GitHub/approx-mult/webtalk.log
+# Journal file: C:/Users/hw/Documents/GitHub/approx-mult\webtalk.jou
+#-----------------------------------------------------------
+source C:/Users/hw/Documents/GitHub/approx-mult/xsim.dir/sim_sb/webtalk/xsim_webtalk.tcl -notrace
+INFO: [Common 17-206] Exiting Webtalk at Fri Aug 21 20:32:18 2026...
