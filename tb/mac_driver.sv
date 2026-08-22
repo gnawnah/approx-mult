@@ -1,6 +1,6 @@
-virtual mac_if.DRV vif;
-
 class mac_driver #(parameter WIDTH=8);
+
+virtual mac_if.DRV vif;
 
 mailbox #(mac_txn #(WIDTH)) mbx;
 
