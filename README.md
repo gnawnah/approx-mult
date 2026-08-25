@@ -1,3 +1,5 @@
+**Related:** [mips-pipeline](https://github.com/gnawnah/mips-pipeline) — pipelined MIPS processor in SystemVerilog (work in progress)
+
 # approx-mult
 
 Truncation based approximate multipliers in Verilog, explored across a design space, built up into a 2x2 systolic array with an on-chip weight memory, tested on MNIST, and run on a Zynq 7020.
